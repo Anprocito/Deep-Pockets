@@ -1,30 +1,40 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Movimiento del personaje en X y Z mediante su propio Transform (nuevo Input System).
-// Como mover el Transform ignora la física, antes de cada desplazamiento se hace un
-// "barrido" con el Rigidbody (SweepTest) para detectar paredes y no atravesarlas.
-[RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(Collider))]
+// Movimiento del personaje mediante su propio Transform (nuevo Input System),
+// con colisiones contra paredes, bloques y piso usando Physics.CapsuleCast.
+// No depende del Rigidbody: la colision se calcula con la forma del CapsuleCollider.
+[RequireComponent(typeof(CapsuleCollider))]
 public class PlayerController : MonoBehaviour
 {
     [Header("Movimiento")]
     [SerializeField] private float speed = 5f;
 
-    [Header("Colisiones")]
-    [Tooltip("Margen de seguridad frente a las paredes.")]
-    [SerializeField] private float skinWidth = 0.02f;
+    [Header("Gravedad / Piso")]
+    [SerializeField] private bool useGravity = true;
+    [Tooltip("Aceleracion de caida en unidades por segundo al cuadrado.")]
+    [SerializeField] private float gravity = 20f;
 
-    private Rigidbody rb;
+    [Header("Colisiones")]
+    [Tooltip("Margen de seguridad frente a paredes y piso.")]
+    [SerializeField] private float skinWidth = 0.03f;
+    [SerializeField] private LayerMask collisionMask = ~0;
+
+    private CapsuleCollider capsule;
     private InputAction moveAction;
+    private float fallSpeed;
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody>();
+        capsule = GetComponent<CapsuleCollider>();
 
-        // El Rigidbody solo se usa para detectar colisiones; el movimiento lo hace el Transform.
-        rb.isKinematic = true;
-        rb.useGravity = false;
+        // Si el personaje todavia tiene un Rigidbody, se deja inactivo para que no
+        // aplique su propia gravedad ni interfiera con el movimiento por Transform.
+        if (TryGetComponent(out Rigidbody rb))
+        {
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
 
         moveAction = new InputAction("Move", InputActionType.Value);
 
@@ -59,43 +69,57 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         Vector2 input = moveAction.ReadValue<Vector2>();
-        if (input == Vector2.zero) return;
+        float step = speed * Time.deltaTime;
 
-        // x del input -> eje X del mundo, y del input -> eje Z. El eje Y queda en 0.
-        Vector3 move = new Vector3(input.x, 0f, input.y) * (speed * Time.deltaTime);
+        // Cada eje se mueve por separado: asi el personaje desliza por las paredes.
+        MoveAlong(Vector3.right * (input.x * step));   // X del input -> eje X del mundo
+        MoveAlong(Vector3.forward * (input.y * step)); // Y del input -> eje Z del mundo
 
-        // Sincroniza el Transform con el motor de fisica para que el barrido use la posicion actual.
-        Physics.SyncTransforms();
-
-        // Intenta el movimiento completo; si choca, desliza por cada eje por separado.
-        if (CanMove(move))
+        if (useGravity)
         {
-            transform.position += move;
-        }
-        else
-        {
-            Vector3 moveX = new Vector3(move.x, 0f, 0f);
-            Vector3 moveZ = new Vector3(0f, 0f, move.z);
+            fallSpeed += gravity * Time.deltaTime;
+            float fallDistance = fallSpeed * Time.deltaTime;
 
-            if (moveX != Vector3.zero && CanMove(moveX))
-            {
-                transform.position += moveX;
-                Physics.SyncTransforms();
-            }
+            float moved = MoveAlong(Vector3.down * fallDistance);
 
-            if (moveZ != Vector3.zero && CanMove(moveZ))
-            {
-                transform.position += moveZ;
-            }
+            // Si no pudo caer todo lo que queria, esta apoyado en el piso.
+            if (moved < fallDistance - 0.0001f)
+                fallSpeed = 0f;
         }
     }
 
-    // Devuelve true si no hay ningun collider en el camino del desplazamiento.
-    private bool CanMove(Vector3 move)
+    // Mueve el personaje como maximo hasta el primer collider que encuentre.
+    // Devuelve la distancia realmente recorrida.
+    private float MoveAlong(Vector3 move)
     {
         float distance = move.magnitude;
-        if (distance <= 0f) return true;
+        if (distance <= 0.000001f) return 0f;
 
-        return !rb.SweepTest(move / distance, out _, distance + skinWidth, QueryTriggerInteraction.Ignore);
+        Vector3 dir = move / distance;
+        GetCapsulePoints(out Vector3 p1, out Vector3 p2, out float radius);
+
+        float allowed = distance;
+        if (Physics.CapsuleCast(p1, p2, radius, dir, out RaycastHit hit,
+                distance + skinWidth, collisionMask, QueryTriggerInteraction.Ignore))
+        {
+            allowed = Mathf.Max(0f, hit.distance - skinWidth);
+        }
+
+        transform.position += dir * allowed;
+        return allowed;
+    }
+
+    // Calcula los dos extremos de la capsula en coordenadas del mundo.
+    private void GetCapsulePoints(out Vector3 p1, out Vector3 p2, out float radius)
+    {
+        Vector3 scale = transform.lossyScale;
+        Vector3 center = transform.TransformPoint(capsule.center);
+
+        radius = capsule.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+        float height = Mathf.Max(capsule.height * Mathf.Abs(scale.y), radius * 2f);
+        float half = height * 0.5f - radius;
+
+        p1 = center + Vector3.up * half;
+        p2 = center - Vector3.up * half;
     }
 }
