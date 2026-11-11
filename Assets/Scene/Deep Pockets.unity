@@ -249,7 +249,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 80
+  m_Constraints: 112
   m_CollisionDetection: 0
 --- !u!1 &691514830
 GameObject:
@@ -338,7 +338,7 @@ Transform:
   m_GameObject: {fileID: 691514830}
   serializedVersion: 2
   m_LocalRotation: {x: 0.41673145, y: -0, z: -0, w: 0.90902966}
-  m_LocalPosition: {x: 0, y: 17, z: -15}
+  m_LocalPosition: {x: 0, y: 21, z: -18}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -357,7 +357,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraFollow
   target: {fileID: 498477766}
-  offset: {x: 0, y: 16, z: -15}
+  offset: {x: 0, y: 20, z: -18}
   smoothSpeed: 8
 --- !u!1 &1022771615
 GameObject:
