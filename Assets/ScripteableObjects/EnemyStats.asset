@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: EnemyStats
   m_EditorClassIdentifier: Assembly-CSharp::EnemyStatsSO
   normalHealth: 100
-  normalMoveSpeed: 3
+  normalMoveSpeed: 6
   normalDamage: 10
   attackInterval: 1
-  fastSpeedBelowPlayer: 2
+  fastSpeedBelowPlayer: 0.4
   fastHealthMultiplier: 0.5
   fastDamageMultiplier: 0.5
   tankHealthMultiplier: 3
