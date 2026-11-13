@@ -20,5 +20,5 @@ MonoBehaviour:
   fastHealthMultiplier: 0.5
   fastDamageMultiplier: 0.5
   tankHealthMultiplier: 3
-  tankSpeedMultiplier: 0.5
+  tankSpeedMultiplier: 0.8
   tankDamageMultiplier: 2

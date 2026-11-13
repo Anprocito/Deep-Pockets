@@ -14,7 +14,7 @@ public class Enemy : MonoBehaviour
     public event Action<Enemy> Died;
 
     private Transform player;
-    private PlayerController playerController;
+    private PlayerStats playerStats;
     private PlayerHealth playerHealth;
     private Collider playerCollider;
     private Collider ownCollider;
@@ -29,7 +29,7 @@ public class Enemy : MonoBehaviour
 
     // Si es rapido, depende de la velocidad actual del jugador.
     public float MoveSpeed =>
-        stats != null ? stats.GetMoveSpeed(type, playerController != null ? playerController.speed : 0f) : 0f;
+        stats != null ? stats.GetMoveSpeed(type, playerStats != null ? playerStats.MoveSpeed : 0f) : 0f;
 
     private void Awake()
     {
@@ -62,10 +62,12 @@ public class Enemy : MonoBehaviour
     public void Initialize(Transform playerTransform)
     {
         player = playerTransform;
-        playerController = playerTransform.GetComponent<PlayerController>();
+        playerStats = playerTransform.GetComponent<PlayerStats>();
         playerHealth = playerTransform.GetComponent<PlayerHealth>();
         playerCollider = playerTransform.GetComponent<Collider>();
 
+        if (playerStats == null)
+            Debug.LogWarning("El jugador no tiene PlayerStats: el enemigo rapido no sabra la velocidad del jugador.", this);
         if (playerHealth == null)
             Debug.LogWarning("El jugador no tiene PlayerHealth: los enemigos no podran hacerle dano.", this);
         if (playerCollider == null)

@@ -3,13 +3,11 @@ using UnityEngine.InputSystem;
 
 // Movimiento del personaje mediante su propio Transform (nuevo Input System),
 // con colisiones contra paredes, bloques y piso usando Physics.CapsuleCast.
-// No depende del Rigidbody: la colision se calcula con la forma del CapsuleCollider.
+// La velocidad sale de PlayerStats.
 [RequireComponent(typeof(CapsuleCollider))]
+[RequireComponent(typeof(PlayerStats))]
 public class PlayerController : MonoBehaviour
 {
-    [Header("Movimiento")]
-    public float speed = 5f;
-
     [Header("Gravedad / Piso")]
     [SerializeField] private bool useGravity = true;
     [Tooltip("Aceleracion de caida en unidades por segundo al cuadrado.")]
@@ -20,12 +18,14 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float skinWidth = 0.03f;
     [SerializeField] private LayerMask collisionMask = ~0;
 
+    private PlayerStats stats;
     private CapsuleCollider capsule;
     private InputAction moveAction;
     private float fallSpeed;
 
     private void Awake()
     {
+        stats = GetComponent<PlayerStats>();
         capsule = GetComponent<CapsuleCollider>();
 
         // Si el personaje todavia tiene un Rigidbody, se deja inactivo para que no
@@ -69,7 +69,7 @@ public class PlayerController : MonoBehaviour
     private void Update()
     {
         Vector2 input = moveAction.ReadValue<Vector2>();
-        float step = speed * Time.deltaTime;
+        float step = stats.MoveSpeed * Time.deltaTime;
 
         // Cada eje se mueve por separado: asi el personaje desliza por las paredes.
         MoveAlong(Vector3.right * (input.x * step));   // X del input -> eje X del mundo
