@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 3642429335942785813}
   - component: {fileID: 1808639126894586678}
   - component: {fileID: 6568435493435642229}
+  - component: {fileID: 160264317391888141}
   m_Layer: 0
   m_Name: Capsule
   m_TagString: Untagged
@@ -146,3 +147,17 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &160264317391888141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6686090794862325183}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ef75aa9e9668b45a5fb87cccb4b9a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Enemy
+  stats: {fileID: 11400000, guid: 2b14944259a48424ca2c2751dfbb7af7, type: 2}
+  type: 1
