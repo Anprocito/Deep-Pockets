@@ -8,7 +8,7 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     [Header("Movimiento")]
-    [SerializeField] private float speed = 5f;
+    public float speed = 5f;
 
     [Header("Gravedad / Piso")]
     [SerializeField] private bool useGravity = true;
