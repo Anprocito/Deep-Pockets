@@ -30,6 +30,6 @@ public class WeaponSO : ScriptableObject
     [Min(1)] public int attacksForSkill = 5;
     [Tooltip("Multiplicador sobre el dano base. 2 = el doble.")]
     [Min(0f)] public float skillDamageMultiplier = 2f;
-    [Tooltip("Cuantos enemigos golpea la habilidad. 0 = todos los que esten en rango.")]
-    [Min(0)] public int skillMaxTargets = 1;
+    [Tooltip("Cuantos enemigos golpea la habilidad. 0 = todos los que esten en la zona (dano en area).")]
+    [Min(0)] public int skillMaxTargets = 0;
 }
