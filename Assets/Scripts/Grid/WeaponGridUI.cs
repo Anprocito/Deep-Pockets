@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 // Las 8 direcciones, en sentido horario. Cada columna de la grilla es una direccion.
@@ -134,7 +135,7 @@ public class WeaponGridUI : MonoBehaviour
         Stretch(counter.rectTransform, 3f);
 
         WeaponGridCell cell = cellRect.gameObject.AddComponent<WeaponGridCell>();
-        cell.Setup(row, col, background, icon, label, counter, emptyCellColor, filledCellColor);
+        cell.Setup(this, row, col, background, icon, label, counter, emptyCellColor, filledCellColor);
         return cell;
     }
 
@@ -176,6 +177,84 @@ public class WeaponGridUI : MonoBehaviour
         text.verticalOverflow = VerticalWrapMode.Truncate;
         text.raycastTarget = false;
         return text;
+    }
+
+    // ----- Arrastrar y soltar con el mouse -----
+
+    // Se lanza al soltar un arma sobre otra celda: (celda de origen, celda de destino).
+    // Lo escucha WeaponInventory, que decide si el movimiento es valido.
+    public event System.Action<WeaponGridCell, WeaponGridCell> DropRequested;
+
+    private WeaponGridCell dragSource;
+    private RectTransform dragGhost;
+
+    public void BeginDrag(WeaponGridCell source, PointerEventData eventData)
+    {
+        if (source.IsEmpty) return; // las celdas vacias no se arrastran
+
+        dragSource = source;
+        source.SetDragging(true);
+
+        // "Fantasma" del arma que sigue al mouse, dibujado encima de todo el Canvas.
+        Canvas canvas = GetComponentInParent<Canvas>().rootCanvas;
+        RectTransform ghost = CreateRect("DragGhost", canvas.transform, Vector2.zero, new Vector2(cellSize, cellSize));
+        ghost.pivot = new Vector2(0.5f, 0.5f);
+
+        Image ghostImage = ghost.gameObject.AddComponent<Image>();
+        Color ghostColor = filledCellColor;
+        ghostColor.a = 0.85f;
+        ghostImage.color = ghostColor;
+        ghostImage.raycastTarget = false; // para que no tape a la celda sobre la que se suelta
+
+        if (source.WeaponIcon != null)
+        {
+            RectTransform iconRect = CreateRect("Icon", ghost, Vector2.zero, Vector2.zero);
+            Stretch(iconRect, 6f);
+            Image iconImage = iconRect.gameObject.AddComponent<Image>();
+            iconImage.sprite = source.WeaponIcon;
+            iconImage.preserveAspect = true;
+            iconImage.raycastTarget = false;
+        }
+
+        Text label = CreateText("Label", ghost, Vector2.zero, Vector2.zero,
+            TextAnchor.MiddleCenter, 14, cellTextColor);
+        Stretch(label.rectTransform, 4f);
+        label.resizeTextForBestFit = true;
+        label.resizeTextMinSize = 8;
+        label.resizeTextMaxSize = 14;
+        label.text = source.WeaponName;
+
+        dragGhost = ghost;
+        ghost.position = eventData.position;
+    }
+
+    public void Drag(PointerEventData eventData)
+    {
+        if (dragGhost != null)
+            dragGhost.position = eventData.position;
+    }
+
+    public void Drop(WeaponGridCell source, WeaponGridCell target)
+    {
+        if (source == null || target == null || source == target) return;
+
+        DropRequested?.Invoke(source, target);
+    }
+
+    // Se llama siempre al terminar el arrastre, se haya soltado sobre una celda o no.
+    public void EndDrag()
+    {
+        if (dragSource != null)
+        {
+            dragSource.SetDragging(false);
+            dragSource = null;
+        }
+
+        if (dragGhost != null)
+        {
+            Destroy(dragGhost.gameObject);
+            dragGhost = null;
+        }
     }
 
     // Celda por fila (0 = fila de arriba) y columna (0 a 7).

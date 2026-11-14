@@ -9,14 +9,14 @@ public static class CardinalDirectionExtensions
     {
         switch (direction)
         {
-            case CardinalDirection.North:     return new Vector3(0f, 0f, 1f);
+            case CardinalDirection.North: return new Vector3(0f, 0f, 1f);
             case CardinalDirection.NorthEast: return new Vector3(1f, 0f, 1f).normalized;
-            case CardinalDirection.East:      return new Vector3(1f, 0f, 0f);
+            case CardinalDirection.East: return new Vector3(1f, 0f, 0f);
             case CardinalDirection.SouthEast: return new Vector3(1f, 0f, -1f).normalized;
-            case CardinalDirection.South:     return new Vector3(0f, 0f, -1f);
+            case CardinalDirection.South: return new Vector3(0f, 0f, -1f);
             case CardinalDirection.SouthWest: return new Vector3(-1f, 0f, -1f).normalized;
-            case CardinalDirection.West:      return new Vector3(-1f, 0f, 0f);
-            default:                          return new Vector3(-1f, 0f, 1f).normalized; // NorthWest
+            case CardinalDirection.West: return new Vector3(-1f, 0f, 0f);
+            default: return new Vector3(-1f, 0f, 1f).normalized; // NorthWest
         }
     }
 }
@@ -77,6 +77,16 @@ public class WeaponInventory : MonoBehaviour
 
         foreach (StartingWeapon start in startingWeapons)
             Equip(start.weapon, start.direction, start.row);
+
+        // Escucha cuando el jugador suelta un arma sobre otra celda con el mouse.
+        if (gridUI != null)
+            gridUI.DropRequested += OnDropRequested;
+    }
+
+    private void OnDestroy()
+    {
+        if (gridUI != null)
+            gridUI.DropRequested -= OnDropRequested;
     }
 
     private void Update()
@@ -122,6 +132,45 @@ public class WeaponInventory : MonoBehaviour
         }
 
         equipped.Add(equippedWeapon);
+        return true;
+    }
+
+    private void OnDropRequested(WeaponGridCell from, WeaponGridCell to)
+    {
+        Move(from.Direction, from.Row, to.Direction, to.Row);
+    }
+
+    // Mueve un arma a otra celda. Solo se permite si la celda de destino esta libre;
+    // si no, el arma se queda donde estaba.
+    public bool Move(CardinalDirection fromDirection, int fromRow, CardinalDirection toDirection, int toRow)
+    {
+        EquippedWeapon weapon = GetWeaponAt(fromDirection, fromRow);
+        if (weapon == null) return false;
+
+        if (toRow < 0 || toRow >= rowDistances.Length)
+        {
+            Debug.LogWarning($"WeaponInventory: la fila {toRow} no tiene distancia asignada en Row Distances.", this);
+            return false;
+        }
+
+        if (GetWeaponAt(toDirection, toRow) != null) return false;
+
+        WeaponGridCell oldCell = weapon.Cell;
+        weapon.MoveTo(toDirection, toRow);
+
+        if (gridUI != null)
+        {
+            if (oldCell != null)
+                oldCell.Clear();
+
+            weapon.Cell = gridUI.GetCell(toDirection, toRow);
+            if (weapon.Cell != null)
+            {
+                weapon.Cell.SetWeapon(weapon.Data.weaponName, weapon.Data.icon);
+                weapon.Cell.SetCounter(weapon.CounterText);
+            }
+        }
+
         return true;
     }
 

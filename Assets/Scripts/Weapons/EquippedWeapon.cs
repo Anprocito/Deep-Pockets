@@ -7,8 +7,8 @@ using UnityEngine;
 public class EquippedWeapon
 {
     public WeaponSO Data { get; }
-    public CardinalDirection Direction { get; }
-    public int Row { get; }
+    public CardinalDirection Direction { get; private set; }
+    public int Row { get; private set; }
     public WeaponGridCell Cell { get; set; }
 
     // Para dibujar el destello de ataque en los Gizmos.
@@ -26,6 +26,13 @@ public class EquippedWeapon
     public EquippedWeapon(WeaponSO data, CardinalDirection direction, int row)
     {
         Data = data;
+        Direction = direction;
+        Row = row;
+    }
+
+    // Cambia el arma de celda. Conserva su contador y su tiempo de espera.
+    public void MoveTo(CardinalDirection direction, int row)
+    {
         Direction = direction;
         Row = row;
     }
