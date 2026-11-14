@@ -24,7 +24,7 @@ public static class CardinalDirectionExtensions
 // Inventario de armas del jugador. Se coloca en el jugador.
 // La CELDA donde esta un arma decide donde ataca:
 //   - la columna (direccion) decide hacia que punto cardinal queda su zona de ataque
-//   - la fila decide a que distancia del jugador queda (fila 0 = la mas cercana)
+//   - la fila decide a que distancia del jugador queda (fila 0 = la de arriba = la mas lejana)
 // Cada arma ataca sola cuando detecta un enemigo dentro de su zona.
 [RequireComponent(typeof(PlayerStats))]
 public class WeaponInventory : MonoBehaviour
@@ -34,16 +34,18 @@ public class WeaponInventory : MonoBehaviour
     {
         public WeaponSO weapon;
         public CardinalDirection direction;
-        [Tooltip("0 = fila de arriba de la grilla (la mas cercana al jugador).")]
+        [Tooltip("0 = fila de arriba de la grilla (la mas lejana al jugador).")]
         [Min(0)] public int row;
     }
 
     [Header("Armas iniciales")]
     [SerializeField] private List<StartingWeapon> startingWeapons = new List<StartingWeapon>();
+    [Tooltip("Si la lista de armas iniciales esta vacia, equipa una daga de prueba (valores por defecto de WeaponSO) en Norte, fila 0 (la celda de arriba a la izquierda, la mas lejana).")]
+    [SerializeField] private bool addTestDagger = true;
 
     [Header("Distancia de cada fila")]
-    [Tooltip("Distancia desde el jugador hasta el CENTRO de la zona de ataque, por fila (la fila 0 es la primera).")]
-    [SerializeField] private float[] rowDistances = { 2f, 4f, 6f, 8f };
+    [Tooltip("Distancia desde el jugador hasta el CENTRO de la zona de ataque, por fila. La fila 0 es la de arriba de la grilla y es la MAS LEJANA; la ultima fila es la mas cercana.")]
+    [SerializeField] private float[] rowDistances = { 8f, 6f, 4f, 2f };
 
     [Header("Deteccion")]
     [SerializeField] private LayerMask enemyLayers = ~0;
@@ -60,6 +62,7 @@ public class WeaponInventory : MonoBehaviour
 
     private PlayerStats stats;
     private PlayerHealth health;
+    private WeaponSO testDagger;
 
     private void Awake()
     {
@@ -78,6 +81,14 @@ public class WeaponInventory : MonoBehaviour
         foreach (StartingWeapon start in startingWeapons)
             Equip(start.weapon, start.direction, start.row);
 
+        // Daga de prueba: se crea por codigo, sin necesidad de crear el asset a mano.
+        if (addTestDagger && startingWeapons.Count == 0)
+        {
+            testDagger = ScriptableObject.CreateInstance<WeaponSO>();
+            testDagger.name = "Daga (prueba)";
+            Equip(testDagger, CardinalDirection.North, 0);
+        }
+
         // Escucha cuando el jugador suelta un arma sobre otra celda con el mouse.
         if (gridUI != null)
             gridUI.DropRequested += OnDropRequested;
@@ -87,6 +98,9 @@ public class WeaponInventory : MonoBehaviour
     {
         if (gridUI != null)
             gridUI.DropRequested -= OnDropRequested;
+
+        if (testDagger != null)
+            Destroy(testDagger);
     }
 
     private void Update()
