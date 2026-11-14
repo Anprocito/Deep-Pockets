@@ -444,6 +444,7 @@ GameObject:
   m_Component:
   - component: {fileID: 259780175}
   - component: {fileID: 259780176}
+  - component: {fileID: 259780177}
   m_Layer: 5
   m_Name: WeaponGrid
   m_TagString: Untagged
@@ -496,6 +497,20 @@ MonoBehaviour:
   m_Spacing: {x: 8, y: 8}
   m_Constraint: 1
   m_ConstraintCount: 8
+--- !u!114 &259780177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 259780174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 971fe8b79dcd1d54bbc9634bc91ee900, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponGridUI
+  cellPrefab: {fileID: 2106014908}
+  rows: 4
 --- !u!1 &271386023
 GameObject:
   m_ObjectHideFlags: 0
@@ -3507,6 +3522,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2106014908 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2705099093019810494, guid: 07c5b0bd5cdaa3643adbd92e1a0347db, type: 3}
+  m_PrefabInstance: {fileID: 9095877364524824987}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1000602534416253542
 PrefabInstance:
   m_ObjectHideFlags: 0
