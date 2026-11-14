@@ -35,6 +35,18 @@ public class PlayerHealth : MonoBehaviour
             Die();
     }
 
+    // Recupera vida sin pasarse de la vida maxima.
+    public void Heal(float amount)
+    {
+        if (IsDead || amount <= 0f) return;
+
+        float before = currentHealth;
+        currentHealth = Mathf.Min(stats.MaxHealth, currentHealth + amount);
+
+        if (currentHealth != before)
+            onHealthChanged?.Invoke(currentHealth, stats.MaxHealth);
+    }
+
     private void Die()
     {
         Debug.Log("El jugador murio.");

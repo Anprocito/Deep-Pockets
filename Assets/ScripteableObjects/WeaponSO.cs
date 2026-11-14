@@ -1,5 +1,12 @@
 using UnityEngine;
 
+// Como se carga la habilidad del arma.
+public enum SkillTrigger
+{
+    AttackCount, // despues de N ataques normales (por ejemplo, la daga)
+    Time         // cada cierta cantidad de segundos; se lanza sola, haya enemigos o no
+}
+
 // Datos de un arma. Cada arma (daga, espada, etc.) es un asset distinto con sus propios valores.
 // Crear con: clic derecho en Project > Create > Weapons > Weapon
 [CreateAssetMenu(fileName = "NewWeapon", menuName = "Weapons/Weapon")]
@@ -26,8 +33,12 @@ public class WeaponSO : ScriptableObject
     [Min(0)] public int maxTargets = 1;
 
     [Header("Habilidad (ataque potenciado)")]
-    [Tooltip("Ataques normales necesarios para cargar la habilidad.")]
+    [Tooltip("Como se carga: por cantidad de ataques normales o por tiempo.")]
+    public SkillTrigger skillTrigger = SkillTrigger.AttackCount;
+    [Tooltip("Solo si Skill Trigger = Attack Count: ataques normales necesarios para cargar la habilidad.")]
     [Min(1)] public int attacksForSkill = 5;
+    [Tooltip("Solo si Skill Trigger = Time: segundos entre una habilidad y la siguiente. Se lanza sola al terminar el tiempo, haya enemigos en la zona o no.")]
+    [Min(0.1f)] public float skillCooldown = 10f;
     [Tooltip("Multiplicador sobre el dano base. 2 = el doble.")]
     [Min(0f)] public float skillDamageMultiplier = 2f;
     [Tooltip("Cuantos enemigos golpea la habilidad. 0 = todos los que esten en la zona (dano en area).")]
