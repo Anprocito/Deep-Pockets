@@ -699,6 +699,28 @@ Transform:
   m_Children: []
   m_Father: {fileID: 96861186}
   m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
+--- !u!1 &291391783 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2840260120544204432, guid: d1619d5e00c265646bcfa72015e044df, type: 3}
+  m_PrefabInstance: {fileID: 268741126111033364}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &291391785
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 291391783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89631be8e459d34438f6f60e18781b7c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WaveHUD
+  margin: {x: 20, y: 20}
+  titleFontSize: 32
+  subtitleFontSize: 18
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  waveManager: {fileID: 1806461218}
 --- !u!43 &465760329
 Mesh:
   m_ObjectHideFlags: 0
@@ -3885,7 +3907,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2840260120544204432, guid: d1619d5e00c265646bcfa72015e044df, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 291391785}
   m_SourcePrefab: {fileID: 100100000, guid: d1619d5e00c265646bcfa72015e044df, type: 3}
 --- !u!1001 &9166014315316925376
 PrefabInstance:
