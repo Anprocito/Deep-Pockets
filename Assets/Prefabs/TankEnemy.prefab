@@ -49,7 +49,7 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -71,6 +71,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   stats: {fileID: 11400000, guid: 2b14944259a48424ca2c2751dfbb7af7, type: 2}
   type: 2
+  experienceOrbPrefab: {fileID: 7556447887661164461, guid: 8f9e36d76e0caaf499c2ac8c3cd1d0ce, type: 3}
 --- !u!1 &8102328276713963131
 GameObject:
   m_ObjectHideFlags: 0

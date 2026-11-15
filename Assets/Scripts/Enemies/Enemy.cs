@@ -11,6 +11,10 @@ public class Enemy : MonoBehaviour
     [SerializeField] private EnemyStatsSO stats;
     [SerializeField] private EnemyType type = EnemyType.Normal;
 
+    [Header("Experiencia")]
+    [Tooltip("Orbe que suelta al morir.")]
+    [SerializeField] private ExperienceOrb experienceOrbPrefab;
+
     public event Action<Enemy> Died;
 
     private Transform player;
@@ -122,7 +126,7 @@ public class Enemy : MonoBehaviour
     // Para usar mas adelante desde armas, proyectiles, etc.
     public void TakeDamage(float amount)
     {
-        if (amount <= 0f) return;
+        if (amount <= 0f || currentHealth <= 0f) return;
 
         currentHealth -= amount;
         if (currentHealth <= 0f)
@@ -131,7 +135,19 @@ public class Enemy : MonoBehaviour
 
     private void Die()
     {
+        DropExperience();
         Died?.Invoke(this);
         Destroy(gameObject);
+    }
+
+    // Suelta un orbe de experiencia en el lugar donde murio.
+    private void DropExperience()
+    {
+        if (experienceOrbPrefab == null) return;
+
+        ExperienceOrb orb = Instantiate(experienceOrbPrefab, transform.position, Quaternion.identity);
+
+        if (player != null && player.TryGetComponent(out PlayerExperience experience))
+            orb.Initialize(experience);
     }
 }
