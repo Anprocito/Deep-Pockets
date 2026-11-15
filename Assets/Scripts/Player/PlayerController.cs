@@ -22,6 +22,7 @@ public class PlayerController : MonoBehaviour
     private CapsuleCollider capsule;
     private InputAction moveAction;
     private float fallSpeed;
+    private readonly RaycastHit[] castHits = new RaycastHit[32];
 
     private void Awake()
     {
@@ -98,15 +99,33 @@ public class PlayerController : MonoBehaviour
         Vector3 dir = move / distance;
         GetCapsulePoints(out Vector3 p1, out Vector3 p2, out float radius);
 
+        // Se buscan todos los colliders del camino y se ignoran los de enemigos y orbes,
+        // aunque tengan algun collider solido; asi nunca bloquean al jugador.
         float allowed = distance;
-        if (Physics.CapsuleCast(p1, p2, radius, dir, out RaycastHit hit,
-                distance + skinWidth, collisionMask, QueryTriggerInteraction.Ignore))
+        int count = Physics.CapsuleCastNonAlloc(p1, p2, radius, dir, castHits,
+            distance + skinWidth, collisionMask, QueryTriggerInteraction.Ignore);
+
+        float nearest = float.MaxValue;
+        for (int i = 0; i < count; i++)
         {
-            allowed = Mathf.Max(0f, hit.distance - skinWidth);
+            if (IgnoredByMovement(castHits[i].collider)) continue;
+
+            if (castHits[i].distance < nearest)
+                nearest = castHits[i].distance;
         }
+
+        if (nearest < float.MaxValue)
+            allowed = Mathf.Max(0f, nearest - skinWidth);
 
         transform.position += dir * allowed;
         return allowed;
+    }
+
+    // Los enemigos y los orbes de experiencia no bloquean el movimiento del jugador.
+    private static bool IgnoredByMovement(Collider other)
+    {
+        return other.GetComponentInParent<Enemy>() != null
+            || other.GetComponentInParent<ExperienceOrb>() != null;
     }
 
     // Calcula los dos extremos de la capsula en coordenadas del mundo.
