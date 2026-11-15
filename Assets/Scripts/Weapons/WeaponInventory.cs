@@ -44,11 +44,26 @@ public class WeaponInventory : MonoBehaviour
     [SerializeField] private bool addTestDagger = true;
 
     [Header("Distancia de cada fila")]
-    [Tooltip("Distancia desde el jugador hasta el CENTRO de la zona de ataque, por fila. La fila 0 es la de arriba de la grilla y es la MAS LEJANA; la ultima fila es la mas cercana.")]
-    [SerializeField] private float[] rowDistances = { 8f, 6f, 4f, 2f };
+    [Tooltip("Distancias desde el jugador hasta el CENTRO de la zona de ataque, una por fila. El orden en que las escribas no importa: la fila de ABAJO de la grilla toma la mas CERCANA y la de ARRIBA la mas LEJANA.")]
+    [SerializeField] private float[] rowDistances = { 2f, 4f, 6f, 8f };
 
     [Header("Deteccion")]
     [SerializeField] private LayerMask enemyLayers = ~0;
+
+    [Header("Zonas visibles en el juego")]
+    [Tooltip("Dibuja en el piso la zona de ataque de cada arma. Se ve tambien en el juego final (los Gizmos no).")]
+    [SerializeField] private bool showZones = true;
+    [Tooltip("Color de la zona en reposo.")]
+    [SerializeField] private Color idleColor = new Color(1f, 1f, 1f, 0.3f);
+    [Tooltip("Color del destello al hacer un ataque normal.")]
+    [SerializeField] private Color attackColor = new Color(1f, 0.35f, 0.2f, 1f);
+    [Tooltip("Color del destello al usar una habilidad.")]
+    [SerializeField] private Color skillColor = new Color(0.75f, 0.35f, 1f, 1f);
+    [Tooltip("Segundos que dura el destello.")]
+    [Min(0.05f)][SerializeField] private float flashDuration = 0.25f;
+    [SerializeField] private float ringWidth = 0.08f;
+    [Tooltip("Altura sobre el piso, para que la zona no se mezcle con el.")]
+    [SerializeField] private float zoneHeightOffset = 0.03f;
 
     [Header("Referencias (opcional, se buscan solas)")]
     [SerializeField] private WeaponGridUI gridUI;
@@ -60,6 +75,10 @@ public class WeaponInventory : MonoBehaviour
     private readonly List<EquippedWeapon> equipped = new List<EquippedWeapon>();
     private readonly Collider[] buffer = new Collider[128];
 
+    private float[] sortedRowDistances;
+    private Transform zonesRoot;
+    private float lastGroundY;
+
     private PlayerStats stats;
     private PlayerHealth health;
     private WeaponSO testDagger;
@@ -68,6 +87,7 @@ public class WeaponInventory : MonoBehaviour
     {
         stats = GetComponent<PlayerStats>();
         TryGetComponent(out health);
+        lastGroundY = transform.position.y;
     }
 
     private void Start()
@@ -101,19 +121,32 @@ public class WeaponInventory : MonoBehaviour
 
         if (testDagger != null)
             Destroy(testDagger);
+
+        if (zonesRoot != null)
+            Destroy(zonesRoot.gameObject);
+    }
+
+    // Se llama al cambiar valores en el Inspector: obliga a recalcular las distancias ordenadas.
+    private void OnValidate()
+    {
+        sortedRowDistances = null;
     }
 
     private void Update()
     {
-        if (health != null && health.IsDead) return;
+        bool playerAlive = health == null || !health.IsDead;
 
         foreach (EquippedWeapon weapon in equipped)
         {
+            if (!playerAlive) break;
+
             Vector3 center = GetZoneCenter(weapon.Direction, weapon.Row);
 
             if (weapon.Tick(center, stats, enemyLayers, buffer, logAttacks) && weapon.Cell != null)
                 weapon.Cell.SetCounter(weapon.CounterText);
         }
+
+        UpdateZoneVisuals();
     }
 
     // Coloca un arma en una celda. Devuelve false si no se pudo (celda ocupada o fuera de la grilla).
@@ -145,6 +178,7 @@ public class WeaponInventory : MonoBehaviour
             }
         }
 
+        equippedWeapon.Visual = CreateZoneVisual(weapon);
         equipped.Add(equippedWeapon);
         return true;
     }
@@ -200,7 +234,75 @@ public class WeaponInventory : MonoBehaviour
     // Centro de la zona de ataque: el jugador + la direccion de la columna * la distancia de la fila.
     private Vector3 GetZoneCenter(CardinalDirection direction, int row)
     {
-        return transform.position + direction.ToVector() * rowDistances[row];
+        return transform.position + direction.ToVector() * GetRowDistance(row);
+    }
+
+    // Las distancias se ordenan de menor a mayor: la fila de ABAJO de la grilla toma la mas
+    // cercana al jugador y la de ARRIBA (fila 0) la mas lejana.
+    private float GetRowDistance(int row)
+    {
+        if (sortedRowDistances == null || sortedRowDistances.Length != rowDistances.Length)
+        {
+            sortedRowDistances = (float[])rowDistances.Clone();
+            System.Array.Sort(sortedRowDistances);
+        }
+
+        if (sortedRowDistances.Length == 0) return 0f;
+
+        int rowCount = gridUI != null ? gridUI.Rows : sortedRowDistances.Length;
+        int index = Mathf.Clamp(rowCount - 1 - row, 0, sortedRowDistances.Length - 1);
+        return sortedRowDistances[index];
+    }
+
+    // ----- Zonas de ataque visibles en el piso (tambien en el juego final) -----
+
+    private WeaponZoneVisual CreateZoneVisual(WeaponSO weapon)
+    {
+        if (!showZones) return null;
+
+        if (zonesRoot == null)
+            zonesRoot = new GameObject("WeaponZones").transform;
+
+        GameObject zone = new GameObject($"Zone_{weapon.weaponName}");
+        zone.transform.SetParent(zonesRoot, false);
+
+        WeaponZoneVisual visual = zone.AddComponent<WeaponZoneVisual>();
+        visual.Build(weapon.attackRadius, ringWidth);
+        return visual;
+    }
+
+    private void UpdateZoneVisuals()
+    {
+        if (!showZones) return;
+
+        float groundY = GetGroundY();
+
+        foreach (EquippedWeapon weapon in equipped)
+        {
+            if (weapon.Visual == null) continue;
+
+            Vector3 center = GetZoneCenter(weapon.Direction, weapon.Row);
+            center.y = groundY;
+
+            // 1 = recien disparado, 0 = destello terminado.
+            float attackAmount = Mathf.Clamp01(1f - (Time.time - weapon.LastAttackTime) / flashDuration);
+            float skillAmount = Mathf.Clamp01(1f - (Time.time - weapon.LastSkillTime) / flashDuration);
+
+            Color color = idleColor;
+            if (attackAmount > 0f) color = Color.Lerp(idleColor, attackColor, attackAmount);
+            if (skillAmount > 0f) color = Color.Lerp(idleColor, skillColor, skillAmount); // la habilidad tiene prioridad
+
+            weapon.Visual.Apply(center, color);
+        }
+    }
+
+    // Altura del piso bajo el jugador (se asume un piso plano, igual que en el spawner).
+    private float GetGroundY()
+    {
+        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, 50f, ~0, QueryTriggerInteraction.Ignore))
+            lastGroundY = hit.point.y + zoneHeightOffset;
+
+        return lastGroundY;
     }
 
     // Dibuja las zonas de ataque (activa el boton Gizmos en la pestana Game para verlas ahi).

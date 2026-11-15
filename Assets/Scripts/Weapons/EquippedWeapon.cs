@@ -10,6 +10,7 @@ public class EquippedWeapon
     public CardinalDirection Direction { get; private set; }
     public int Row { get; private set; }
     public WeaponGridCell Cell { get; set; }
+    public WeaponZoneVisual Visual { get; set; }
 
     // Para dibujar el destello de ataque en los Gizmos.
     public float LastAttackTime { get; private set; } = -999f;
