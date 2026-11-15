@@ -25,15 +25,19 @@ public class Enemy : MonoBehaviour
 
     private float currentHealth;
     private float nextAttackTime;
+    private WaveStats waveStats = WaveStats.Default;
 
     public EnemyType Type => type;
     public float CurrentHealth => currentHealth;
-    public float MaxHealth => stats != null ? stats.GetMaxHealth(type) : 0f;
-    public float Damage => stats != null ? stats.GetDamage(type) : 0f;
+    public float MaxHealth => stats != null ? stats.GetMaxHealth(type) * waveStats.healthMultiplier : 0f;
+    public float Damage => stats != null ? stats.GetDamage(type) * waveStats.damageMultiplier : 0f;
 
     // Si es rapido, depende de la velocidad actual del jugador.
     public float MoveSpeed =>
-        stats != null ? stats.GetMoveSpeed(type, playerStats != null ? playerStats.MoveSpeed : 0f) : 0f;
+        stats != null
+            ? stats.GetMoveSpeed(type, playerStats != null ? playerStats.MoveSpeed : 0f,
+                waveStats.speedMultiplier, waveStats.fastMarginMultiplier)
+            : 0f;
 
     private void Awake()
     {
@@ -76,6 +80,14 @@ public class Enemy : MonoBehaviour
             Debug.LogWarning("El jugador no tiene PlayerHealth: los enemigos no podran hacerle dano.", this);
         if (playerCollider == null)
             Debug.LogWarning("El jugador no tiene Collider: no se puede detectar el contacto.", this);
+    }
+
+    // Lo llama el spawner al crear al enemigo: fija sus estadisticas segun la oleada actual.
+    // Se aplican una sola vez, asi que el enemigo las conserva aunque despues cambie la oleada.
+    public void ApplyWaveStats(WaveStats values)
+    {
+        waveStats = values;
+        currentHealth = MaxHealth;
     }
 
     private void Update()
@@ -146,6 +158,7 @@ public class Enemy : MonoBehaviour
         if (experienceOrbPrefab == null) return;
 
         ExperienceOrb orb = Instantiate(experienceOrbPrefab, transform.position, Quaternion.identity);
+        orb.SetExperienceMultiplier(waveStats.experienceMultiplier);
 
         if (player != null && player.TryGetComponent(out PlayerExperience experience))
             orb.Initialize(experience);

@@ -14,15 +14,15 @@ public class PlayerExperience : MonoBehaviour
     [SerializeField] private float requirementIncreasePercent = 25f;
 
     private int level = 1;
-    private int currentExperience;
+    private float currentExperience;
 
     // Experiencia que hace falta para pasar del nivel actual al siguiente.
     private int ExperienceRequired =>
         Mathf.RoundToInt(baseExperienceRequired * Mathf.Pow(1f + requirementIncreasePercent / 100f, level - 1));
 
-    public void AddExperience(int amount)
+    public void AddExperience(float amount)
     {
-        if (amount <= 0) return;
+        if (amount <= 0f) return;
 
         currentExperience += amount;
 

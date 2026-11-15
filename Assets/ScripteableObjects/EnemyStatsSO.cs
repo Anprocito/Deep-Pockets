@@ -40,7 +40,7 @@ public class EnemyStatsSO : ScriptableObject
         {
             case EnemyType.Fast: return normalHealth * fastHealthMultiplier;
             case EnemyType.Tank: return normalHealth * tankHealthMultiplier;
-            default:             return normalHealth;
+            default: return normalHealth;
         }
     }
 
@@ -50,18 +50,19 @@ public class EnemyStatsSO : ScriptableObject
         {
             case EnemyType.Fast: return normalDamage * fastDamageMultiplier;
             case EnemyType.Tank: return normalDamage * tankDamageMultiplier;
-            default:             return normalDamage;
+            default: return normalDamage;
         }
     }
 
     // El enemigo rapido depende de la velocidad actual del jugador.
-    public float GetMoveSpeed(EnemyType type, float playerSpeed)
+    // speedMultiplier y fastMarginMultiplier los pone la oleada (1 = sin cambios).
+    public float GetMoveSpeed(EnemyType type, float playerSpeed, float speedMultiplier = 1f, float fastMarginMultiplier = 1f)
     {
         switch (type)
         {
-            case EnemyType.Fast: return Mathf.Max(0f, playerSpeed - fastSpeedBelowPlayer);
-            case EnemyType.Tank: return normalMoveSpeed * tankSpeedMultiplier;
-            default:             return normalMoveSpeed;
+            case EnemyType.Fast: return Mathf.Max(0f, playerSpeed - fastSpeedBelowPlayer * fastMarginMultiplier);
+            case EnemyType.Tank: return normalMoveSpeed * tankSpeedMultiplier * speedMultiplier;
+            default: return normalMoveSpeed * speedMultiplier;
         }
     }
 }

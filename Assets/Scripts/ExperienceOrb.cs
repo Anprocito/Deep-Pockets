@@ -13,6 +13,7 @@ public class ExperienceOrb : MonoBehaviour
     private Collider playerCollider;
     private Collider ownCollider;
     private bool collected;
+    private float experienceMultiplier = 1f;
 
     private void Awake()
     {
@@ -30,6 +31,12 @@ public class ExperienceOrb : MonoBehaviour
             else
                 Debug.LogWarning($"{name}: no se encontro al jugador (falta PlayerExperience).", this);
         }
+    }
+
+    // La experiencia que da el orbe se multiplica segun la oleada del enemigo que lo solto.
+    public void SetExperienceMultiplier(float multiplier)
+    {
+        experienceMultiplier = multiplier;
     }
 
     // Lo llama el enemigo justo despues de crear el orbe.
@@ -56,7 +63,7 @@ public class ExperienceOrb : MonoBehaviour
         if (!touching) return;
 
         collected = true;
-        player.AddExperience(experience);
+        player.AddExperience(experience * experienceMultiplier);
         Destroy(gameObject);
     }
 }

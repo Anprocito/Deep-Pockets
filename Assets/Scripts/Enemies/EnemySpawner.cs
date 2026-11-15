@@ -3,6 +3,7 @@ using UnityEngine;
 
 // Genera enemigos en un punto aleatorio del plano XZ, a una distancia del jugador
 // entre minRadius y maxRadius. Se coloca en un objeto vacio de la escena.
+// Con un WaveManager, cada enemigo recibe las estadisticas de la oleada en la que aparece.
 public class EnemySpawner : MonoBehaviour
 {
     [System.Serializable]
@@ -16,6 +17,8 @@ public class EnemySpawner : MonoBehaviour
 
     [Header("Referencias")]
     [SerializeField] private Transform player;
+    [Tooltip("Controla las oleadas. Si se deja vacio, se busca en la escena.")]
+    [SerializeField] private WaveManager waveManager;
 
     [Header("Enemigos")]
     [SerializeField] private List<SpawnEntry> enemies = new List<SpawnEntry>();
@@ -25,10 +28,10 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private float maxRadius = 10f;
 
     [Header("Ritmo")]
-    [Tooltip("Segundos entre cada aparicion.")]
+    [Tooltip("Segundos entre cada aparicion en la primera oleada. Aumenta con cada oleada.")]
     [SerializeField] private float spawnInterval = 2f;
-    [Tooltip("Maximo de enemigos vivos al mismo tiempo.")]
-    [SerializeField] private int maxAlive = 30;
+    [Tooltip("Maximo de enemigos vivos al mismo tiempo (no cambia con las oleadas).")]
+    [SerializeField] private int maxAlive = 50;
 
     private readonly List<GameObject> alive = new List<GameObject>();
     private float timer;
@@ -49,14 +52,23 @@ public class EnemySpawner : MonoBehaviour
             else
                 Debug.LogError("EnemySpawner: no hay jugador asignado ni encontrado en la escena.", this);
         }
+
+        if (waveManager == null)
+            waveManager = FindFirstObjectByType<WaveManager>();
+
+        if (waveManager == null)
+            Debug.LogWarning("EnemySpawner: no hay WaveManager en la escena; no habra oleadas.", this);
     }
 
     private void Update()
     {
         if (player == null) return;
 
+        // Cada oleada la aparicion es mas lenta: el intervalo se multiplica.
+        float interval = spawnInterval * (waveManager != null ? waveManager.SpawnIntervalMultiplier : 1f);
+
         timer += Time.deltaTime;
-        if (timer < spawnInterval) return;
+        if (timer < interval) return;
 
         timer = 0f;
         TrySpawn();
@@ -75,9 +87,23 @@ public class EnemySpawner : MonoBehaviour
         alive.Add(instance);
 
         if (instance.TryGetComponent(out Enemy enemy))
+        {
             enemy.Initialize(player);
+
+            // Las estadisticas de la oleada se fijan ahora y el enemigo las conserva
+            // aunque despues cambie la oleada.
+            if (waveManager != null)
+                enemy.ApplyWaveStats(waveManager.CurrentStats);
+        }
         else
+        {
             Debug.LogWarning($"El prefab {prefab.name} no tiene el script Enemy.", prefab);
+        }
+
+        // La aparicion se cuenta DESPUES de asignarle sus estadisticas: asi el ultimo enemigo
+        // de una oleada todavia pertenece a esa oleada.
+        if (waveManager != null)
+            waveManager.RegisterSpawn();
     }
 
     // Punto aleatorio en el anillo entre minRadius y maxRadius.
