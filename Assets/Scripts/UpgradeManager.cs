@@ -44,10 +44,17 @@ public class UpgradeManager : MonoBehaviour
         if (inventoryGrid == null) inventoryGrid = FindFirstObjectByType<InventoryGrid>();
         if (ui == null) ui = FindFirstObjectByType<UpgradeUI>();
 
-        if (experience == null || stats == null || health == null || inventoryGrid == null || ui == null)
+        List<string> missing = new List<string>();
+        if (experience == null) missing.Add("PlayerExperience (en el jugador)");
+        if (stats == null) missing.Add("PlayerStats (en el jugador)");
+        if (health == null) missing.Add("PlayerHealth (en el jugador)");
+        if (inventoryGrid == null) missing.Add("InventoryGrid (en el jugador)");
+        if (ui == null) missing.Add("UpgradeUI (en un objeto ACTIVO dentro del Canvas)");
+        else if (!ui.IsReady) missing.Add("UpgradeUI esta fuera de un Canvas");
+
+        if (missing.Count > 0)
         {
-            Debug.LogError("UpgradeManager: faltan referencias (PlayerExperience, PlayerStats, PlayerHealth, " +
-                           "InventoryGrid o UpgradeUI). Revisa que existan en la escena.", this);
+            Debug.LogError("UpgradeManager: no puede funcionar. Falta: " + string.Join(", ", missing), this);
             enabled = false;
             return;
         }
@@ -68,6 +75,8 @@ public class UpgradeManager : MonoBehaviour
 
     private void OnLeveledUp(int newLevel)
     {
+        if (VictoryManager.GameWon) return; // la partida ya termino
+
         // Si sube varios niveles de golpe, o sube mientras hay una ventana abierta, se hacen en cola.
         pendingLevelUps++;
 

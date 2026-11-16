@@ -14,6 +14,8 @@ public class PlayerExperience : MonoBehaviour
     [SerializeField] private float requirementIncreasePercent = 25f;
 
     private int level = 1;
+
+    public int Level => level;
     private float currentExperience;
 
     // Se lanza una vez por cada nivel que sube, con el nivel nuevo.
@@ -35,7 +37,11 @@ public class PlayerExperience : MonoBehaviour
             currentExperience -= ExperienceRequired;
             level++;
             Debug.Log($"¡El jugador subió de nivel! Ahora es nivel {level}.");
-            LeveledUp?.Invoke(level);
+
+            if (LeveledUp != null)
+                LeveledUp.Invoke(level);
+            else
+                Debug.LogWarning("Nadie escucha la subida de nivel: falta un UpgradeManager activo en la escena.", this);
         }
     }
 }

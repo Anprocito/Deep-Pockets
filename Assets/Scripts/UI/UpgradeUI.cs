@@ -30,6 +30,9 @@ public class UpgradeUI : MonoBehaviour
     private RectTransform content;
     private Text placementMessage;
 
+    // False si el objeto no esta dentro de un Canvas (en ese caso no puede mostrar nada).
+    public bool IsReady => content != null;
+
     private void Awake()
     {
         RectTransform root = transform as RectTransform;

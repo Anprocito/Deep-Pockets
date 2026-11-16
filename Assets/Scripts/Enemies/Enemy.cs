@@ -17,6 +17,9 @@ public class Enemy : MonoBehaviour
 
     public event Action<Enemy> Died;
 
+    // Se lanza cuando muere CUALQUIER enemigo (lo usa el contador de victoria).
+    public static event Action<Enemy> AnyEnemyDied;
+
     private Transform player;
     private PlayerStats playerStats;
     private PlayerHealth playerHealth;
@@ -149,6 +152,7 @@ public class Enemy : MonoBehaviour
     {
         DropExperience();
         Died?.Invoke(this);
+        AnyEnemyDied?.Invoke(this);
         Destroy(gameObject);
     }
 
