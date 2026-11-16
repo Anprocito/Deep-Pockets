@@ -12,10 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ecd9254b4dbc764e851a9c30c5d58bf, type: 3}
   m_Name: DamagePotion
   m_EditorClassIdentifier: Assembly-CSharp::DamagePotionSO
-  potionName: Pocion de dano
+  potionName: "Pocion de da\xF1o"
   icon: {fileID: 0}
+  width: 1
+  height: 1
   trigger: 1
   triggerHealthPercent: 45
   includeThreshold: 1
-  duration: 15
+  duration: 30
   damageBonusPercent: 30
