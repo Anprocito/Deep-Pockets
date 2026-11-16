@@ -26,12 +26,13 @@ public class PlayerStats : MonoBehaviour
     private readonly List<TimedBonus> timedBonuses = new List<TimedBonus>();
     private float baseMoveSpeed;
     private float baseDamageMultiplier = 1f;
+    private float permanentSpeedPercent;
 
     public float MaxHealth { get; private set; }
 
     // Velocidad con los bonus temporales activos (por ejemplo, +50% de la pocion de velocidad).
     public float MoveSpeed =>
-        Mathf.Max(0f, baseMoveSpeed * (1f + SumTimedBonuses(StatType.MoveSpeed) / 100f));
+        Mathf.Max(0f, baseMoveSpeed * (1f + (permanentSpeedPercent + SumTimedBonuses(StatType.MoveSpeed)) / 100f));
 
     // Multiplicador de dano con los bonus temporales activos. 1 = 100%, 1.3 = +30%.
     public float DamageMultiplier =>
@@ -63,6 +64,19 @@ public class PlayerStats : MonoBehaviour
     public void AddDamagePercent(float percent)
     {
         baseDamageMultiplier = Mathf.Max(0f, baseDamageMultiplier + percent / 100f);
+    }
+
+    // Mejora PERMANENTE de vida maxima. (Para sumar tambien vida actual, usar PlayerHealth.IncreaseMaxHealth.)
+    public void AddMaxHealth(float amount)
+    {
+        MaxHealth = Mathf.Max(1f, MaxHealth + amount);
+    }
+
+    // Mejora PERMANENTE de velocidad en porcentaje: AddMoveSpeedPercent(8) suma +8% sobre la velocidad base.
+    // Se suma a las demas mejoras y a los bonus temporales.
+    public void AddMoveSpeedPercent(float percent)
+    {
+        permanentSpeedPercent += percent;
     }
 
     // Bonus TEMPORAL en porcentaje: se suma a las demas mejoras y desaparece solo al terminar el tiempo.

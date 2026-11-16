@@ -46,6 +46,8 @@ public class WeaponGridUI : MonoBehaviour
     private Font font;
 
     public int Rows => rows;
+    public float CellSize => cellSize;
+    public float Spacing => spacing;
 
     private void Awake()
     {
@@ -181,37 +183,46 @@ public class WeaponGridUI : MonoBehaviour
 
     // ----- Arrastrar y soltar con el mouse -----
 
-    // Se lanza al soltar un arma sobre otra celda: (celda de origen, celda de destino).
-    // Lo escucha WeaponInventory, que decide si el movimiento es valido.
-    public event System.Action<WeaponGridCell, WeaponGridCell> DropRequested;
+    // Se lanza al soltar algo sobre una casilla: (lo que se arrastra, casilla de destino).
+    // Lo escucha InventoryGrid, que decide si el movimiento es valido.
+    public event System.Action<IGridDragSource, WeaponGridCell> DropRequested;
 
-    private WeaponGridCell dragSource;
+    private GridItem dragItem;
     private RectTransform dragGhost;
 
     public void BeginDrag(WeaponGridCell source, PointerEventData eventData)
     {
-        if (source.IsEmpty) return; // las celdas vacias no se arrastran
+        if (source.IsEmpty) return; // las casillas vacias no se arrastran
 
-        dragSource = source;
-        source.SetDragging(true);
+        dragItem = source.Item;
+        SetItemDragging(dragItem, true);
 
-        // "Fantasma" del arma que sigue al mouse, dibujado encima de todo el Canvas.
+        // "Fantasma" del objeto que sigue al mouse, dibujado encima de todo el Canvas.
+        // Tiene el tamano de todo el objeto, que puede ocupar varias casillas.
+        float step = cellSize + spacing;
+        float ghostWidth = dragItem.Width * cellSize + (dragItem.Width - 1) * spacing;
+        float ghostHeight = dragItem.Height * cellSize + (dragItem.Height - 1) * spacing;
+
         Canvas canvas = GetComponentInParent<Canvas>().rootCanvas;
-        RectTransform ghost = CreateRect("DragGhost", canvas.transform, Vector2.zero, new Vector2(cellSize, cellSize));
-        ghost.pivot = new Vector2(0.5f, 0.5f);
+        RectTransform ghost = CreateRect("DragGhost", canvas.transform, Vector2.zero, new Vector2(ghostWidth, ghostHeight));
+
+        // El pivote hace que el cursor quede sobre la casilla del objeto que se agarro.
+        ghost.pivot = new Vector2(
+            (source.GrabColumn * step + cellSize * 0.5f) / ghostWidth,
+            1f - (source.GrabRow * step + cellSize * 0.5f) / ghostHeight);
 
         Image ghostImage = ghost.gameObject.AddComponent<Image>();
         Color ghostColor = filledCellColor;
         ghostColor.a = 0.85f;
         ghostImage.color = ghostColor;
-        ghostImage.raycastTarget = false; // para que no tape a la celda sobre la que se suelta
+        ghostImage.raycastTarget = false; // para que no tape a la casilla sobre la que se suelta
 
-        if (source.WeaponIcon != null)
+        if (dragItem.Data.Icon != null)
         {
             RectTransform iconRect = CreateRect("Icon", ghost, Vector2.zero, Vector2.zero);
             Stretch(iconRect, 6f);
             Image iconImage = iconRect.gameObject.AddComponent<Image>();
-            iconImage.sprite = source.WeaponIcon;
+            iconImage.sprite = dragItem.Data.Icon;
             iconImage.preserveAspect = true;
             iconImage.raycastTarget = false;
         }
@@ -222,7 +233,7 @@ public class WeaponGridUI : MonoBehaviour
         label.resizeTextForBestFit = true;
         label.resizeTextMinSize = 8;
         label.resizeTextMaxSize = 14;
-        label.text = source.WeaponName;
+        label.text = dragItem.Data.DisplayName;
 
         dragGhost = ghost;
         ghost.position = eventData.position;
@@ -234,26 +245,42 @@ public class WeaponGridUI : MonoBehaviour
             dragGhost.position = eventData.position;
     }
 
-    public void Drop(WeaponGridCell source, WeaponGridCell target)
+    // "dragged" es lo que se esta arrastrando: una casilla ocupada o un objeto nuevo del panel de mejoras.
+    public void Drop(GameObject dragged, WeaponGridCell target)
     {
-        if (source == null || target == null || source == target) return;
+        if (dragged == null || target == null) return;
 
-        DropRequested?.Invoke(source, target);
+        if (dragged.TryGetComponent(out IGridDragSource source))
+            DropRequested?.Invoke(source, target);
     }
 
-    // Se llama siempre al terminar el arrastre, se haya soltado sobre una celda o no.
+    // Se llama siempre al terminar el arrastre, se haya soltado sobre una casilla o no.
     public void EndDrag()
     {
-        if (dragSource != null)
+        if (dragItem != null)
         {
-            dragSource.SetDragging(false);
-            dragSource = null;
+            SetItemDragging(dragItem, false);
+            dragItem = null;
         }
 
         if (dragGhost != null)
         {
             Destroy(dragGhost.gameObject);
             dragGhost = null;
+        }
+    }
+
+    // Atenua (o restaura) todas las casillas que ocupa un objeto.
+    private void SetItemDragging(GridItem item, bool dragging)
+    {
+        for (int dr = 0; dr < item.Height; dr++)
+        {
+            for (int dc = 0; dc < item.Width; dc++)
+            {
+                WeaponGridCell cell = GetCell(item.Row + dr, item.Column + dc);
+                if (cell != null)
+                    cell.SetDragging(dragging);
+            }
         }
     }
 

@@ -10,7 +10,7 @@ public enum SkillTrigger
 // Datos de un arma. Cada arma (daga, espada, etc.) es un asset distinto con sus propios valores.
 // Crear con: clic derecho en Project > Create > Weapons > Weapon
 [CreateAssetMenu(fileName = "NewWeapon", menuName = "Weapons/Weapon")]
-public class WeaponSO : ScriptableObject
+public class WeaponSO : InventoryItemSO
 {
     [Header("General")]
     [Tooltip("Nombre que se muestra en la celda de la grilla.")]
@@ -43,4 +43,10 @@ public class WeaponSO : ScriptableObject
     [Min(0f)] public float skillDamageMultiplier = 2f;
     [Tooltip("Cuantos enemigos golpea la habilidad. 0 = todos los que esten en la zona (dano en area).")]
     [Min(0)] public int skillMaxTargets = 0;
+
+    // InventoryItemSO: asi el sistema de mejoras trata igual a armas y pociones.
+    public override string DisplayName => weaponName;
+    public override Sprite Icon => icon;
+    public override int Width => width;
+    public override int Height => height;
 }

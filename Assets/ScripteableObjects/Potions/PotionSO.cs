@@ -10,11 +10,17 @@ public enum PotionTrigger
 // Base de todas las pociones. Cada tipo de pocion es una clase hija que define su efecto
 // (curacion, velocidad, dano...); lo comun (nombre, icono, cuando se activa y cuanto dura) vive aqui.
 // No se puede crear directamente: se crea alguna de las hijas desde Create > Potions.
-public abstract class PotionSO : ScriptableObject
+public abstract class PotionSO : InventoryItemSO
 {
     [Header("General")]
     public string potionName = "Pocion";
     public Sprite icon;
+
+    [Header("Tamano en la grilla")]
+    [Tooltip("Casillas que ocupa a lo ancho (columnas de la grilla).")]
+    [Min(1)] public int width = 1;
+    [Tooltip("Casillas que ocupa a lo alto (filas de la grilla).")]
+    [Min(1)] public int height = 1;
 
     [Header("Activacion (automatica)")]
     public PotionTrigger trigger = PotionTrigger.HealthThreshold;
@@ -36,11 +42,11 @@ public abstract class PotionSO : ScriptableObject
                 return true;
 
             case PotionTrigger.HealthThreshold:
-            {
-                // Se multiplica antes de dividir para que valores como 45% de 100 den exactamente 45.
-                float limit = health.MaxHealth * triggerHealthPercent / 100f;
-                return includeThreshold ? health.CurrentHealth <= limit : health.CurrentHealth < limit;
-            }
+                {
+                    // Se multiplica antes de dividir para que valores como 45% de 100 den exactamente 45.
+                    float limit = health.MaxHealth * triggerHealthPercent / 100f;
+                    return includeThreshold ? health.CurrentHealth <= limit : health.CurrentHealth < limit;
+                }
 
             default:
                 return false;
@@ -55,4 +61,10 @@ public abstract class PotionSO : ScriptableObject
 
     // Al terminar el efecto.
     public virtual void End(PlayerStats stats, PlayerHealth health) { }
+
+    // InventoryItemSO: asi el sistema de mejoras trata igual a armas y pociones.
+    public override string DisplayName => potionName;
+    public override Sprite Icon => icon;
+    public override int Width => width;
+    public override int Height => height;
 }

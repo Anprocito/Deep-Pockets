@@ -2,9 +2,11 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// Una celda de la grilla de armas. La crea y configura WeaponGridUI; no hace falta ponerla a mano.
-// Permite arrastrar su arma con el mouse hacia otra celda (necesita un EventSystem en la escena).
-public class WeaponGridCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
+// Una casilla de la grilla del inventario. La crea y configura WeaponGridUI; no hace falta ponerla a mano.
+// Un objeto de varias casillas pinta todas; el nombre y el contador van en la casilla principal
+// (la de arriba a la izquierda). Se puede arrastrar el objeto desde cualquiera de sus casillas.
+public class WeaponGridCell : MonoBehaviour, IGridDragSource,
+    IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
 {
     private WeaponGridUI owner;
     private Image background;
@@ -14,19 +16,26 @@ public class WeaponGridCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
     private Color emptyColor;
     private Color filledColor;
 
+    private int offsetColumn;
+    private int offsetRow;
+
     public int Row { get; private set; }
     public int Column { get; private set; }
 
     // La columna indica la direccion: 0 = Norte, 1 = Noreste, ... 7 = Noroeste.
     public CardinalDirection Direction => (CardinalDirection)Column;
 
-    public bool IsEmpty { get; private set; } = true;
+    // Objeto que ocupa esta casilla (null si esta vacia).
+    public GridItem Item { get; private set; }
+    public bool IsEmpty => Item == null;
 
-    // Datos del arma que se muestra (los usa el "fantasma" que sigue al mouse al arrastrar).
-    public string WeaponName { get; private set; } = string.Empty;
-    public Sprite WeaponIcon { get; private set; }
+    // IGridDragSource
+    public InventoryItemSO ItemData => Item != null ? Item.Data : null;
+    public GridItem PlacedItem => Item;
+    public int GrabColumn => offsetColumn;
+    public int GrabRow => offsetRow;
 
-    // Lo llama WeaponGridUI al crear la celda.
+    // Lo llama WeaponGridUI al crear la casilla.
     public void Setup(WeaponGridUI owner, int row, int column, Image background, Image icon, Text label,
                       Text counter, Color emptyColor, Color filledColor)
     {
@@ -43,16 +52,21 @@ public class WeaponGridCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
         Clear();
     }
 
-    // Ocupa la celda con un arma: pinta el fondo y muestra su nombre (y su icono, si tiene).
-    public void SetWeapon(string weaponName, Sprite sprite = null)
+    // Marca la casilla como parte de un objeto. (offsetColumn, offsetRow) es su posicion dentro del
+    // objeto: (0, 0) es la casilla principal.
+    public void SetItemPart(GridItem item, int offsetColumn, int offsetRow)
     {
-        IsEmpty = false;
-        WeaponName = weaponName;
-        WeaponIcon = sprite;
+        Item = item;
+        this.offsetColumn = offsetColumn;
+        this.offsetRow = offsetRow;
+
+        bool isMain = offsetColumn == 0 && offsetRow == 0;
 
         background.color = filledColor;
-        label.text = weaponName;
+        label.text = isMain ? item.Data.DisplayName : string.Empty;
+        counter.text = isMain ? item.CounterText : string.Empty;
 
+        Sprite sprite = isMain ? item.Data.Icon : null;
         icon.sprite = sprite;
         icon.enabled = sprite != null;
     }
@@ -63,12 +77,12 @@ public class WeaponGridCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
         counter.text = text;
     }
 
-    // Deja la celda vacia.
+    // Deja la casilla vacia.
     public void Clear()
     {
-        IsEmpty = true;
-        WeaponName = string.Empty;
-        WeaponIcon = null;
+        Item = null;
+        offsetColumn = 0;
+        offsetRow = 0;
 
         background.color = emptyColor;
         label.text = string.Empty;
@@ -77,7 +91,7 @@ public class WeaponGridCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
         icon.enabled = false;
     }
 
-    // Atenua la celda de origen mientras se arrastra su arma.
+    // Atenua la casilla mientras se arrastra su objeto.
     public void SetDragging(bool dragging)
     {
         Color color = IsEmpty ? emptyColor : filledColor;
@@ -102,13 +116,9 @@ public class WeaponGridCell : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
         owner.EndDrag();
     }
 
-    // Se llama en la celda sobre la que se suelta el mouse.
+    // Se llama en la casilla sobre la que se suelta el mouse.
     public void OnDrop(PointerEventData eventData)
     {
-        WeaponGridCell source = eventData.pointerDrag != null
-            ? eventData.pointerDrag.GetComponent<WeaponGridCell>()
-            : null;
-
-        owner.Drop(source, this);
+        owner.Drop(eventData.pointerDrag, this);
     }
 }

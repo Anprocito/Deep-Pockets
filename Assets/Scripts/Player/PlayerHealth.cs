@@ -35,6 +35,16 @@ public class PlayerHealth : MonoBehaviour
             Die();
     }
 
+    // Sube la vida maxima y suma esa misma cantidad a la vida actual.
+    public void IncreaseMaxHealth(float amount)
+    {
+        if (amount <= 0f) return;
+
+        stats.AddMaxHealth(amount);
+        currentHealth = Mathf.Min(stats.MaxHealth, currentHealth + amount);
+        onHealthChanged?.Invoke(currentHealth, stats.MaxHealth);
+    }
+
     // Recupera vida sin pasarse de la vida maxima.
     public void Heal(float amount)
     {

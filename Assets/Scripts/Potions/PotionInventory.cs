@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Pociones que tiene el jugador y cantidad de cada una.
+// Pociones iniciales: tipo de pocion y cuantas.
 [System.Serializable]
 public class PotionStack
 {
@@ -9,14 +9,18 @@ public class PotionStack
     [Min(0)] public int count = 1;
 }
 
-// Inventario de pociones del jugador. Se coloca en el jugador.
-// Las pociones se usan solas: cada frame se revisa si alguna cumple su condicion de activacion.
-// Una pocion no se vuelve a usar mientras su efecto anterior siga activo (asi no se gastan de mas).
+// Pociones del jugador. Cada pocion ocupa casillas de la grilla del inventario.
+// Se usan solas: cada frame se revisa si alguna cumple su condicion de activacion. Al usarse,
+// la pocion desaparece y libera sus casillas. Una pocion no se usa mientras otra del mismo tipo
+// siga haciendo efecto (asi no se gastan de mas).
+[DefaultExecutionOrder(10)] // su Start corre despues del de WeaponInventory: las armas ocupan su casilla primero
 [RequireComponent(typeof(PlayerStats))]
 [RequireComponent(typeof(PlayerHealth))]
+[RequireComponent(typeof(InventoryGrid))]
 public class PotionInventory : MonoBehaviour
 {
     [Header("Pociones iniciales")]
+    [Tooltip("Se colocan en las primeras casillas libres de la grilla.")]
     [SerializeField] private List<PotionStack> startingPotions = new List<PotionStack>();
 
     [Header("Depuracion")]
@@ -29,19 +33,52 @@ public class PotionInventory : MonoBehaviour
         public float elapsed;
     }
 
-    private readonly List<PotionStack> stacks = new List<PotionStack>();
+    private readonly List<GridItem> potionItems = new List<GridItem>();
     private readonly List<ActiveEffect> activeEffects = new List<ActiveEffect>();
 
     private PlayerStats stats;
     private PlayerHealth health;
+    private InventoryGrid inventoryGrid;
 
     private void Awake()
     {
         stats = GetComponent<PlayerStats>();
         health = GetComponent<PlayerHealth>();
+        inventoryGrid = GetComponent<InventoryGrid>();
 
+        if (inventoryGrid == null)
+        {
+            Debug.LogError("PotionInventory: falta el componente InventoryGrid en el jugador.", this);
+            enabled = false;
+            return;
+        }
+
+        inventoryGrid.ItemAdded += OnItemAdded;
+    }
+
+    private void Start()
+    {
         foreach (PotionStack start in startingPotions)
-            Add(start.potion, start.count);
+        {
+            if (start.potion == null) continue;
+
+            for (int i = 0; i < start.count; i++)
+            {
+                if (!inventoryGrid.TryFindSpace(start.potion.Width, start.potion.Height, out int column, out int row))
+                {
+                    Debug.LogWarning($"PotionInventory: no hay espacio para {start.potion.potionName}.", this);
+                    break;
+                }
+
+                inventoryGrid.Place(start.potion, column, row);
+            }
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (inventoryGrid != null)
+            inventoryGrid.ItemAdded -= OnItemAdded;
     }
 
     private void Update()
@@ -52,48 +89,32 @@ public class PotionInventory : MonoBehaviour
         TryUsePotions();
     }
 
-    // Agrega pociones al inventario (se usara, por ejemplo, al recoger una).
-    public void Add(PotionSO potion, int amount = 1)
+    // Se llama cada vez que se coloca un objeto en la grilla.
+    private void OnItemAdded(GridItem item)
     {
-        if (potion == null || amount <= 0) return;
-
-        foreach (PotionStack stack in stacks)
-        {
-            if (stack.potion == potion)
-            {
-                stack.count += amount;
-                return;
-            }
-        }
-
-        stacks.Add(new PotionStack { potion = potion, count = amount });
-    }
-
-    public int GetCount(PotionSO potion)
-    {
-        foreach (PotionStack stack in stacks)
-            if (stack.potion == potion)
-                return stack.count;
-
-        return 0;
+        if (item.Data is PotionSO)
+            potionItems.Add(item);
     }
 
     private void TryUsePotions()
     {
-        foreach (PotionStack stack in stacks)
+        for (int i = potionItems.Count - 1; i >= 0; i--)
         {
-            PotionSO potion = stack.potion;
+            GridItem item = potionItems[i];
+            PotionSO potion = (PotionSO)item.Data;
 
-            if (potion == null || stack.count <= 0) continue;
             if (IsActive(potion)) continue;
             if (!potion.ShouldTrigger(health)) continue;
 
-            stack.count--;
+            // La pocion se gasta y libera sus casillas.
+            potionItems.RemoveAt(i);
+            inventoryGrid.Remove(item);
+
             potion.Apply(stats, health);
             activeEffects.Add(new ActiveEffect { potion = potion, elapsed = 0f });
 
             if (logUsage)
-                Debug.Log($"Pocion usada: {potion.potionName} ({potion.duration}s). Quedan {stack.count}.");
+                Debug.Log($"Pocion usada: {potion.potionName} ({potion.duration}s).");
         }
     }
 
