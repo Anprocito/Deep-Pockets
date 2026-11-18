@@ -65,7 +65,7 @@ public class EnemySpawner : MonoBehaviour
         if (player == null) return;
 
         // Cada oleada la aparicion es mas lenta: el intervalo se multiplica.
-        float interval = spawnInterval * (waveManager != null ? waveManager.SpawnIntervalMultiplier : 1f);
+        float interval = spawnInterval / (waveManager != null ? waveManager.SpawnIntervalMultiplier : 1f);
 
         timer += Time.deltaTime;
         if (timer < interval) return;
