@@ -93,6 +93,62 @@ MonoBehaviour:
   filledCellColor: {r: 0.627451, g: 0.8627451, b: 0.8039216, a: 1}
   headerTextColor: {r: 0.74509805, g: 0.74509805, b: 0.74509805, a: 1}
   cellTextColor: {r: 0.15686275, g: 0.15686275, b: 0.15686275, a: 1}
+--- !u!1 &1533894640850306032
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3934772003983065648}
+  - component: {fileID: 1493676200210568919}
+  m_Layer: 0
+  m_Name: PlayerHUD
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3934772003983065648
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1533894640850306032}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7278960535774688998}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1493676200210568919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1533894640850306032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8938c2a8178dfe44aac25e967a42108c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHUD
+  topMargin: 20
+  barWidth: 520
+  healthBarHeight: 30
+  experienceBarHeight: 20
+  spacing: 8
+  barBackgroundColor: {r: 0.078431375, g: 0.078431375, b: 0.11764706, a: 0.8627451}
+  healthColor: {r: 0.8039216, g: 0.21568628, b: 0.21568628, a: 1}
+  experienceColor: {r: 0.27450982, g: 0.64705884, b: 1, a: 1}
+  killsFontSize: 28
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  health: {fileID: 0}
+  experience: {fileID: 0}
 --- !u!1 &1925260391107538722
 GameObject:
   m_ObjectHideFlags: 0
@@ -179,9 +235,10 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2415350963302450478}
-  - {fileID: 1318335929239714062}
   - {fileID: 4422304146120971806}
   - {fileID: 1993965243084754726}
+  - {fileID: 3934772003983065648}
+  - {fileID: 1318335929239714062}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -261,6 +318,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1318335929239714062}
+  - component: {fileID: 7392858748292087911}
   m_Layer: 5
   m_Name: WaveHUD
   m_TagString: Untagged
@@ -275,7 +333,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2840260120544204432}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -287,6 +345,23 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &7392858748292087911
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2840260120544204432}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89631be8e459d34438f6f60e18781b7c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WaveHUD
+  margin: {x: 20, y: 20}
+  titleFontSize: 32
+  subtitleFontSize: 18
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  waveManager: {fileID: 0}
 --- !u!1 &4127857831669690901
 GameObject:
   m_ObjectHideFlags: 0

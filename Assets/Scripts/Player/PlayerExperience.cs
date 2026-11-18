@@ -16,13 +16,14 @@ public class PlayerExperience : MonoBehaviour
     private int level = 1;
 
     public int Level => level;
+    public float CurrentExperience => currentExperience;
     private float currentExperience;
 
     // Se lanza una vez por cada nivel que sube, con el nivel nuevo.
     public event System.Action<int> LeveledUp;
 
     // Experiencia que hace falta para pasar del nivel actual al siguiente.
-    private int ExperienceRequired =>
+    public int ExperienceRequired =>
         Mathf.RoundToInt(baseExperienceRequired * Mathf.Pow(1f + requirementIncreasePercent / 100f, level - 1));
 
     public void AddExperience(float amount)
