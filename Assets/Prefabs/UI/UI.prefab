@@ -236,9 +236,9 @@ RectTransform:
   m_Children:
   - {fileID: 2415350963302450478}
   - {fileID: 4422304146120971806}
-  - {fileID: 1993965243084754726}
   - {fileID: 3934772003983065648}
   - {fileID: 1318335929239714062}
+  - {fileID: 6700401414875388024}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -362,7 +362,7 @@ MonoBehaviour:
   subtitleFontSize: 18
   textColor: {r: 1, g: 1, b: 1, a: 1}
   waveManager: {fileID: 0}
---- !u!1 &4127857831669690901
+--- !u!1 &5881952765451454893
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -370,8 +370,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1993965243084754726}
-  - component: {fileID: 5045671841561392680}
+  - component: {fileID: 6700401414875388024}
+  - component: {fileID: 688939583225501462}
   m_Layer: 0
   m_Name: VictoryManager
   m_TagString: Untagged
@@ -379,13 +379,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1993965243084754726
+--- !u!4 &6700401414875388024
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4127857831669690901}
+  m_GameObject: {fileID: 5881952765451454893}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -394,19 +394,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7278960535774688998}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5045671841561392680
+--- !u!114 &688939583225501462
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4127857831669690901}
+  m_GameObject: {fileID: 5881952765451454893}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a8766bd087202c5478b8218b66cd2840, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VictoryManager
-  enemiesToWin: 1
+  enemiesToWin: 2
   victoryTitle: Ganaste!
   margin: {x: 20, y: 20}
   counterFontSize: 28

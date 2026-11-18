@@ -233,7 +233,7 @@ public class WeaponGridUI : MonoBehaviour
         label.resizeTextForBestFit = true;
         label.resizeTextMinSize = 8;
         label.resizeTextMaxSize = 14;
-        label.text = dragItem.Data.DisplayName;
+        label.text = dragItem.Data.Icon == null ? dragItem.Data.DisplayName : string.Empty;
 
         dragGhost = ghost;
         ghost.position = eventData.position;

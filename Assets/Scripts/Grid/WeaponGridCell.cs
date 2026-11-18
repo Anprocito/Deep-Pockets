@@ -63,7 +63,8 @@ public class WeaponGridCell : MonoBehaviour, IGridDragSource,
         bool isMain = offsetColumn == 0 && offsetRow == 0;
 
         background.color = filledColor;
-        label.text = isMain ? item.Data.DisplayName : string.Empty;
+        // Si el objeto tiene icono, el nombre sobra: se ve solo el icono (el contador se mantiene).
+        label.text = isMain && item.Data.Icon == null ? item.Data.DisplayName : string.Empty;
         counter.text = isMain ? item.CounterText : string.Empty;
 
         Sprite sprite = isMain ? item.Data.Icon : null;

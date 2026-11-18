@@ -120,7 +120,7 @@ public class UpgradeUI : MonoBehaviour
             iconImage.raycastTarget = false;
         }
 
-        Text label = CreateText("Label", holder, item.DisplayName, 20, FontStyle.Bold, itemTextColor,
+        Text label = CreateText("Label", holder, item.Icon == null ? item.DisplayName : string.Empty, 20, FontStyle.Bold, itemTextColor,
             TextAnchor.MiddleCenter, Vector2.zero, Vector2.zero);
         Stretch(label.rectTransform, 4f);
         label.resizeTextForBestFit = true;

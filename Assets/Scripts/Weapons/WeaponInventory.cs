@@ -42,9 +42,6 @@ public class WeaponInventory : MonoBehaviour
 
     [Header("Armas iniciales")]
     [SerializeField] private List<StartingWeapon> startingWeapons = new List<StartingWeapon>();
-    [Tooltip("Si la lista de armas iniciales esta vacia, equipa una daga de prueba (valores por defecto de WeaponSO) " +
-             "en Norte, fila 0 (la casilla de arriba a la izquierda, la mas lejana).")]
-    [SerializeField] private bool addTestDagger = true;
 
     [Header("Distancia de cada fila")]
     [Tooltip("Distancias desde el jugador hasta el CENTRO de la zona de ataque, una por fila. " +
@@ -85,7 +82,6 @@ public class WeaponInventory : MonoBehaviour
     private PlayerStats stats;
     private PlayerHealth health;
     private InventoryGrid inventoryGrid;
-    private WeaponSO testDagger;
 
     private void Awake()
     {
@@ -109,22 +105,15 @@ public class WeaponInventory : MonoBehaviour
         foreach (StartingWeapon start in startingWeapons)
             Equip(start.weapon, start.direction, start.row);
 
-        // Daga de prueba: se crea por codigo, sin necesidad de crear el asset a mano.
-        if (addTestDagger && startingWeapons.Count == 0)
-        {
-            testDagger = ScriptableObject.CreateInstance<WeaponSO>();
-            testDagger.name = "Daga (prueba)";
-            Equip(testDagger, CardinalDirection.North, 0);
-        }
+        if (startingWeapons.Count == 0)
+            Debug.LogWarning("WeaponInventory: no hay armas iniciales. Agrega tu daga en Starting Weapons " +
+                             "(Weapon = el asset de la daga, Direction = North, Row = 0).", this);
     }
 
     private void OnDestroy()
     {
         if (inventoryGrid != null)
             inventoryGrid.ItemAdded -= OnItemAdded;
-
-        if (testDagger != null)
-            Destroy(testDagger);
 
         if (zonesRoot != null)
             Destroy(zonesRoot.gameObject);

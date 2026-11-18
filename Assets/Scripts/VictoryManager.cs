@@ -3,7 +3,8 @@ using UnityEngine.UI;
 
 // Condicion de victoria: al eliminar cierta cantidad de enemigos, el jugador gana.
 // Muestra un contador arriba a la izquierda y, al ganar, pausa el juego y muestra la pantalla de victoria.
-// Se coloca en un objeto vacio DENTRO del Canvas (aparte de los demas HUD).
+// Se puede colocar en cualquier objeto: si no esta dentro de un Canvas, crea su interfaz en el
+// Canvas de la escena (o crea uno).
 public class VictoryManager : MonoBehaviour
 {
     // True cuando el jugador ya gano. Otros sistemas lo consultan para no abrir mas ventanas.
@@ -11,7 +12,7 @@ public class VictoryManager : MonoBehaviour
 
     [Header("Victoria")]
     [Tooltip("Enemigos que hay que eliminar para ganar.")]
-    [Min(1)] [SerializeField] private int enemiesToWin = 450;
+    [Min(1)][SerializeField] private int enemiesToWin = 450;
     [SerializeField] private string victoryTitle = "Ganaste!";
 
     [Header("Contador (esquina superior izquierda)")]
@@ -27,6 +28,7 @@ public class VictoryManager : MonoBehaviour
     [SerializeField] private PlayerExperience experience;
     [SerializeField] private WaveManager waveManager;
 
+    private RectTransform root; // donde se construye la interfaz
     private Font font;
     private Text counterText;
     private int kills;
@@ -36,14 +38,7 @@ public class VictoryManager : MonoBehaviour
     {
         GameWon = false;
 
-        RectTransform root = transform as RectTransform;
-        if (root == null || GetComponentInParent<Canvas>() == null)
-        {
-            Debug.LogError("VictoryManager: el objeto debe estar dentro de un Canvas (hijo del Canvas en la Hierarchy).", this);
-            enabled = false;
-            return;
-        }
-
+        root = PrepareRoot();
         font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
         // Ocupa toda la pantalla, pero no dibuja nada ni bloquea clics hasta que se gane.
@@ -69,6 +64,13 @@ public class VictoryManager : MonoBehaviour
         Enemy.AnyEnemyDied -= OnEnemyDied;
     }
 
+    private void OnDestroy()
+    {
+        // Si la interfaz se creo en un objeto aparte, se borra junto con este script.
+        if (root != null && root.gameObject != gameObject)
+            Destroy(root.gameObject);
+    }
+
     private void Start()
     {
         if (experience == null) experience = FindFirstObjectByType<PlayerExperience>();
@@ -79,6 +81,52 @@ public class VictoryManager : MonoBehaviour
     {
         if (!GameWon)
             elapsed += Time.deltaTime; // con el juego en pausa, deltaTime es 0
+    }
+
+    // Si este objeto ya es parte de la UI (tiene Rect Transform y un Canvas arriba), se usa tal cual.
+    // Si no, se construye en un objeto nuevo dentro del Canvas de la escena (o de uno creado aqui).
+    private RectTransform PrepareRoot()
+    {
+        RectTransform own = transform as RectTransform;
+        if (own != null && GetComponentInParent<Canvas>() != null)
+            return own;
+
+        Canvas canvas = FindOverlayCanvas();
+        if (canvas == null)
+            canvas = CreateOverlayCanvas();
+
+        GameObject rootObject = new GameObject("VictoryManager (UI)", typeof(RectTransform));
+        RectTransform rect = (RectTransform)rootObject.transform;
+        rect.SetParent(canvas.transform, false);
+
+        Debug.Log($"VictoryManager: este objeto no estaba dentro de un Canvas; la interfaz se creó dentro de '{canvas.name}'.", this);
+        return rect;
+    }
+
+    private static Canvas FindOverlayCanvas()
+    {
+        foreach (Canvas candidate in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+        {
+            if (candidate.isRootCanvas && candidate.renderMode == RenderMode.ScreenSpaceOverlay)
+                return candidate;
+        }
+
+        return null;
+    }
+
+    private static Canvas CreateOverlayCanvas()
+    {
+        GameObject canvasObject = new GameObject("HUD Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+
+        Canvas canvas = canvasObject.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        return canvas;
     }
 
     private void OnEnemyDied(Enemy enemy)
@@ -107,7 +155,7 @@ public class VictoryManager : MonoBehaviour
 
     private void ShowVictoryScreen()
     {
-        transform.SetAsLastSibling(); // por encima del resto de la interfaz
+        root.SetAsLastSibling(); // por encima del resto de la interfaz
 
         // Fondo oscuro que bloquea los clics en lo que hay debajo.
         RectTransform dim = CreateRect("Dim", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
@@ -141,7 +189,7 @@ public class VictoryManager : MonoBehaviour
         GameObject go = new GameObject(name, typeof(RectTransform));
         RectTransform rect = (RectTransform)go.transform;
 
-        rect.SetParent(transform, false);
+        rect.SetParent(root, false);
         rect.anchorMin = anchor;
         rect.anchorMax = anchor;
         rect.pivot = pivot;
