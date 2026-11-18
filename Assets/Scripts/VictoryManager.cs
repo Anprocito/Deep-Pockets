@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 // Condicion de victoria: al eliminar cierta cantidad de enemigos, el jugador gana.
@@ -14,6 +15,7 @@ public class VictoryManager : MonoBehaviour
     [Tooltip("Enemigos que hay que eliminar para ganar.")]
     [Min(1)][SerializeField] private int enemiesToWin = 450;
     [SerializeField] private string victoryTitle = "Ganaste!";
+    [SerializeField] private string restartLabel = "Reiniciar";
 
     [Header("Contador (esquina superior izquierda)")]
     [Tooltip("Separacion respecto al borde izquierdo (x) y al borde superior (y) de la pantalla.")]
@@ -23,6 +25,7 @@ public class VictoryManager : MonoBehaviour
     [Header("Colores")]
     [SerializeField] private Color textColor = Color.white;
     [SerializeField] private Color dimColor = new Color(0f, 0f, 0f, 0.8f);
+    [SerializeField] private Color buttonColor = new Color32(52, 58, 92, 255);
 
     [Header("Referencias (se buscan solas)")]
     [SerializeField] private PlayerExperience experience;
@@ -182,6 +185,50 @@ public class VictoryManager : MonoBehaviour
 
         CreateText("Wave", center, center, new Vector2(0f, -120f), new Vector2(1000f, 60f),
             $"Oleada: {wave}", 44, FontStyle.Normal, TextAnchor.MiddleCenter);
+
+        CreateRestartButton(center);
+    }
+
+    private void CreateRestartButton(Vector2 center)
+    {
+        Vector2 position = new Vector2(0f, -240f);
+        Vector2 size = new Vector2(360f, 90f);
+
+        RectTransform buttonRect = CreateRect("RestartButton", center, center, position, size);
+
+        Image background = buttonRect.gameObject.AddComponent<Image>();
+        background.color = buttonColor;
+
+        Button button = buttonRect.gameObject.AddComponent<Button>();
+        button.targetGraphic = background;
+
+        ColorBlock colors = button.colors;
+        colors.normalColor = new Color(0.85f, 0.85f, 0.85f, 1f);
+        colors.highlightedColor = Color.white;
+        colors.pressedColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+        colors.selectedColor = colors.normalColor;
+        button.colors = colors;
+        button.onClick.AddListener(RestartLevel);
+
+        // El texto va como objeto aparte encima del boton (sin bloquear los clics).
+        CreateText("RestartLabel", center, center, position, size,
+            restartLabel, 40, FontStyle.Bold, TextAnchor.MiddleCenter);
+    }
+
+    // Vuelve a cargar la escena actual desde cero.
+    private void RestartLevel()
+    {
+        int sceneIndex = SceneManager.GetActiveScene().buildIndex;
+
+        if (sceneIndex < 0)
+        {
+            Debug.LogError("VictoryManager: la escena actual no esta en Build Profiles / Build Settings, " +
+                           "asi que no se puede reiniciar. Agregala con \"Add Open Scenes\".", this);
+            return;
+        }
+
+        Time.timeScale = 1f; // la victoria dejo el juego en pausa
+        SceneManager.LoadScene(sceneIndex);
     }
 
     private RectTransform CreateRect(string name, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size)

@@ -2167,8 +2167,8 @@ MonoBehaviour:
     weight: 10
   - prefab: {fileID: 1331183946589835795, guid: 996b70bbbbc7f4046a0e9b7619c6df46, type: 3}
     weight: 10
-  minRadius: 5.7
-  maxRadius: 10
+  minRadius: 9
+  maxRadius: 15
   spawnInterval: 1
   maxAlive: 30
 --- !u!43 &1326770690

@@ -10,6 +10,8 @@ public class Enemy : MonoBehaviour
     [Header("Configuracion")]
     [SerializeField] private EnemyStatsSO stats;
     [SerializeField] private EnemyType type = EnemyType.Normal;
+    [Tooltip("Si esta marcado, el enemigo gira para mirar al jugador. Con sprites de frente a la camara, dejalo desmarcado.")]
+    [SerializeField] private bool rotateTowardsPlayer = false;
 
     [Header("Experiencia")]
     [Tooltip("Orbe que suelta al morir.")]
@@ -105,7 +107,8 @@ public class Enemy : MonoBehaviour
         if (toPlayer.sqrMagnitude > 0.0001f)
         {
             Vector3 dir = toPlayer.normalized;
-            transform.rotation = Quaternion.LookRotation(dir);
+            if (rotateTowardsPlayer)
+                transform.rotation = Quaternion.LookRotation(dir);
 
             // Se detiene al tocar al jugador; si el jugador se aleja, vuelve a perseguirlo.
             if (!touching)

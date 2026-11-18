@@ -408,10 +408,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::VictoryManager
   enemiesToWin: 450
   victoryTitle: Ganaste!
+  restartLabel: Reiniciar
   margin: {x: 20, y: 20}
   counterFontSize: 28
   textColor: {r: 1, g: 1, b: 1, a: 1}
   dimColor: {r: 0, g: 0, b: 0, a: 0.8}
+  buttonColor: {r: 0.20392157, g: 0.22745098, b: 0.36078432, a: 1}
   experience: {fileID: 0}
   waveManager: {fileID: 0}
 --- !u!1001 &460247844811275507
