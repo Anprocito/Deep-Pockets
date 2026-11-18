@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: HealthPotion
   m_EditorClassIdentifier: Assembly-CSharp::HealthPotionSO
   potionName: Pocion de vida
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: c2e4be7d70524e44b9d1bc0f2c481d7c, type: 3}
+  width: 1
+  height: 1
   trigger: 0
   triggerHealthPercent: 45
   includeThreshold: 1

@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: Daga
   m_EditorClassIdentifier: Assembly-CSharp::WeaponSO
   weaponName: Daga
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: fa2f6242931cbd34884d491ad27a6f3c, type: 3}
   width: 1
   height: 1
   baseDamage: 20
-  attackInterval: 1
-  attackRadius: 2
-  maxTargets: 1
+  attackInterval: 0.95
+  attackRadius: 1
+  maxTargets: 5
   skillTrigger: 0
   attacksForSkill: 5
   skillCooldown: 10
