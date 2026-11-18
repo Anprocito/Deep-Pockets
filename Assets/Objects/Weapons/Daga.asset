@@ -18,7 +18,7 @@ MonoBehaviour:
   height: 1
   baseDamage: 20
   attackInterval: 0.95
-  attackRadius: 1
+  attackRadius: 2
   maxTargets: 5
   skillTrigger: 0
   attacksForSkill: 5
