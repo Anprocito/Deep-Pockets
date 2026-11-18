@@ -16,12 +16,12 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 411ca4abe0fffdd48bc7fdf9f54c6174, type: 3}
   width: 2
   height: 1
-  baseDamage: 20
-  attackInterval: 1
+  baseDamage: 30
+  attackInterval: 1.2
   attackRadius: 2
-  maxTargets: 1
-  skillTrigger: 0
+  maxTargets: 10
+  skillTrigger: 1
   attacksForSkill: 5
-  skillCooldown: 10
-  skillDamageMultiplier: 2
+  skillCooldown: 9
+  skillDamageMultiplier: 3
   skillMaxTargets: 0

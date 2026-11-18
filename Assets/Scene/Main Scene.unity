@@ -910,8 +910,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aeae0c97e278cdc43a00384c1adce9a4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponInventory
-  startingWeapons: []
-  addTestDagger: 1
+  startingWeapons:
+  - weapon: {fileID: 11400000, guid: 05429cbb5d0724e4dbfbcde89072e85e, type: 2}
+    direction: 0
+    row: 1
   rowDistances:
   - 2
   - 4
@@ -1776,6 +1778,17 @@ Transform:
   m_Children: []
   m_Father: {fileID: 96861186}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1041479891 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6711399478416192507, guid: d1619d5e00c265646bcfa72015e044df, type: 3}
+  m_PrefabInstance: {fileID: 268741126111033364}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 971fe8b79dcd1d54bbc9634bc91ee900, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponGridUI
 --- !u!1 &1300840751
 GameObject:
   m_ObjectHideFlags: 0
@@ -4044,6 +4057,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2618287929876728828, guid: 9b1537fe81c944841896d91b65a16db0, type: 3}
+      propertyPath: gridUI
+      value: 
+      objectReference: {fileID: 1041479891}
     - target: {fileID: 2998519514430874940, guid: 9b1537fe81c944841896d91b65a16db0, type: 3}
       propertyPath: m_LocalScale.x
       value: 1.5
