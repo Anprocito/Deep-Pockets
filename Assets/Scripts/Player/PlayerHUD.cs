@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 // HUD del jugador, arriba en el centro de la pantalla: barra de vida, barra de experiencia
@@ -115,9 +116,12 @@ public class PlayerHUD : MonoBehaviour
         if (own != null && GetComponentInParent<Canvas>() != null)
             return own;
 
-        Canvas canvas = FindOverlayCanvas();
+        // Solo se usa un Canvas de la escena de este objeto. Al reiniciar el nivel, Unity crea la escena
+        // nueva antes de borrar la vieja, y no hay que colgar la interfaz del Canvas de la vieja.
+        Scene scene = gameObject.scene;
+        Canvas canvas = FindOverlayCanvas(scene);
         if (canvas == null)
-            canvas = CreateOverlayCanvas();
+            canvas = CreateOverlayCanvas(scene);
 
         GameObject rootObject = new GameObject("PlayerHUD (UI)", typeof(RectTransform));
         RectTransform rect = (RectTransform)rootObject.transform;
@@ -127,20 +131,22 @@ public class PlayerHUD : MonoBehaviour
         return rect;
     }
 
-    private static Canvas FindOverlayCanvas()
+    private static Canvas FindOverlayCanvas(Scene scene)
     {
         foreach (Canvas candidate in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
         {
-            if (candidate.isRootCanvas && candidate.renderMode == RenderMode.ScreenSpaceOverlay)
+            if (candidate.gameObject.scene == scene && candidate.isRootCanvas &&
+                candidate.renderMode == RenderMode.ScreenSpaceOverlay)
                 return candidate;
         }
 
         return null;
     }
 
-    private static Canvas CreateOverlayCanvas()
+    private static Canvas CreateOverlayCanvas(Scene scene)
     {
         GameObject canvasObject = new GameObject("HUD Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        SceneManager.MoveGameObjectToScene(canvasObject, scene); // que nazca en la escena correcta
 
         Canvas canvas = canvasObject.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
