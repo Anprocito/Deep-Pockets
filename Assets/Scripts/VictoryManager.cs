@@ -2,19 +2,27 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// Condicion de victoria: al eliminar cierta cantidad de enemigos, el jugador gana.
-// Muestra un contador arriba a la izquierda y, al ganar, pausa el juego y muestra la pantalla de victoria.
+// Fin de la partida: victoria (al eliminar cierta cantidad de enemigos) y derrota (si muere el jugador).
+// Muestra un contador arriba a la izquierda y, al terminar, pausa el juego y muestra la pantalla de
+// victoria o de derrota, las dos con un boton para reiniciar el nivel.
 // Se puede colocar en cualquier objeto: si no esta dentro de un Canvas, crea su interfaz en el
 // Canvas de la escena (o crea uno).
 public class VictoryManager : MonoBehaviour
 {
-    // True cuando el jugador ya gano. Otros sistemas lo consultan para no abrir mas ventanas.
+    // Estado de la partida. Otros sistemas lo consultan para no abrir mas ventanas al terminar.
     public static bool GameWon { get; private set; }
+    public static bool GameLost { get; private set; }
+    public static bool GameEnded => GameWon || GameLost;
 
     [Header("Victoria")]
     [Tooltip("Enemigos que hay que eliminar para ganar.")]
     [Min(1)][SerializeField] private int enemiesToWin = 450;
     [SerializeField] private string victoryTitle = "Ganaste!";
+
+    [Header("Derrota")]
+    [SerializeField] private string defeatTitle = "Perdiste!";
+
+    [Header("Boton")]
     [SerializeField] private string restartLabel = "Reiniciar";
 
     [Header("Contador (esquina superior izquierda)")]
@@ -29,6 +37,7 @@ public class VictoryManager : MonoBehaviour
 
     [Header("Referencias (se buscan solas)")]
     [SerializeField] private PlayerExperience experience;
+    [SerializeField] private PlayerHealth health;
     [SerializeField] private WaveManager waveManager;
 
     private RectTransform root; // donde se construye la interfaz
@@ -40,11 +49,12 @@ public class VictoryManager : MonoBehaviour
     private void Awake()
     {
         GameWon = false;
+        GameLost = false;
 
         root = PrepareRoot();
         font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
-        // Ocupa toda la pantalla, pero no dibuja nada ni bloquea clics hasta que se gane.
+        // Ocupa toda la pantalla, pero no dibuja nada ni bloquea clics hasta que termine la partida.
         root.anchorMin = Vector2.zero;
         root.anchorMax = Vector2.one;
         root.offsetMin = Vector2.zero;
@@ -67,22 +77,32 @@ public class VictoryManager : MonoBehaviour
         Enemy.AnyEnemyDied -= OnEnemyDied;
     }
 
+    private void Start()
+    {
+        if (experience == null) experience = FindFirstObjectByType<PlayerExperience>();
+        if (health == null) health = FindFirstObjectByType<PlayerHealth>();
+        if (waveManager == null) waveManager = FindFirstObjectByType<WaveManager>();
+
+        // La derrota llega cuando el jugador avisa de que murio.
+        if (health != null && health.onDied != null)
+            health.onDied.AddListener(OnPlayerDied);
+        else
+            Debug.LogWarning("VictoryManager: no se encontro PlayerHealth; no habra pantalla de derrota.", this);
+    }
+
     private void OnDestroy()
     {
+        if (health != null && health.onDied != null)
+            health.onDied.RemoveListener(OnPlayerDied);
+
         // Si la interfaz se creo en un objeto aparte, se borra junto con este script.
         if (root != null && root.gameObject != gameObject)
             Destroy(root.gameObject);
     }
 
-    private void Start()
-    {
-        if (experience == null) experience = FindFirstObjectByType<PlayerExperience>();
-        if (waveManager == null) waveManager = FindFirstObjectByType<WaveManager>();
-    }
-
     private void Update()
     {
-        if (!GameWon)
+        if (!GameEnded)
             elapsed += Time.deltaTime; // con el juego en pausa, deltaTime es 0
     }
 
@@ -134,13 +154,21 @@ public class VictoryManager : MonoBehaviour
 
     private void OnEnemyDied(Enemy enemy)
     {
-        if (GameWon) return;
+        if (GameEnded) return;
 
         kills++;
         UpdateCounter();
 
         if (kills >= enemiesToWin)
             Win();
+    }
+
+    private void OnPlayerDied()
+    {
+        if (GameEnded) return;
+
+        GameLost = true;
+        EndGame(defeatTitle);
     }
 
     private void UpdateCounter()
@@ -151,12 +179,17 @@ public class VictoryManager : MonoBehaviour
     private void Win()
     {
         GameWon = true;
-        Time.timeScale = 0f;
-
-        ShowVictoryScreen();
+        EndGame(victoryTitle);
     }
 
-    private void ShowVictoryScreen()
+    private void EndGame(string title)
+    {
+        Time.timeScale = 0f;
+        ShowEndScreen(title);
+    }
+
+    // Pantalla final (victoria o derrota): titulo, tiempo, nivel, oleada y boton de reiniciar.
+    private void ShowEndScreen(string title)
     {
         root.SetAsLastSibling(); // por encima del resto de la interfaz
 
@@ -175,7 +208,7 @@ public class VictoryManager : MonoBehaviour
         Vector2 center = new Vector2(0.5f, 0.5f);
 
         CreateText("Title", center, center, new Vector2(0f, 150f), new Vector2(1200f, 130f),
-            victoryTitle, 90, FontStyle.Bold, TextAnchor.MiddleCenter);
+            title, 90, FontStyle.Bold, TextAnchor.MiddleCenter);
 
         CreateText("Time", center, center, new Vector2(0f, 20f), new Vector2(1000f, 60f),
             $"Tiempo: {totalSeconds / 60:00}:{totalSeconds % 60:00}", 44, FontStyle.Normal, TextAnchor.MiddleCenter);
@@ -227,7 +260,7 @@ public class VictoryManager : MonoBehaviour
             return;
         }
 
-        Time.timeScale = 1f; // la victoria dejo el juego en pausa
+        Time.timeScale = 1f; // al terminar la partida el juego quedo en pausa
         SceneManager.LoadScene(sceneIndex);
     }
 

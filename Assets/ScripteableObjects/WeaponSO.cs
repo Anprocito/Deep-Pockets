@@ -27,8 +27,7 @@ public class WeaponSO : InventoryItemSO
     [Min(0f)] public float baseDamage = 20f;
     [Tooltip("Segundos entre ataques.")]
     [Min(0.05f)] public float attackInterval = 1f;
-    [Tooltip("Radio de la zona de ataque. La posicion de la zona depende de la celda donde este el arma.")]
-    [Min(0.1f)] public float attackRadius = 2f;
+    // El area de ataque no se define aqui: la dan las casillas donde se coloque el arma.
     [Tooltip("Cuantos enemigos golpea cada ataque (los mas cercanos primero). 0 = todos los que esten en rango.")]
     [Min(0)] public int maxTargets = 1;
 

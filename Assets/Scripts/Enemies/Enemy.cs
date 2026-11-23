@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 // Enemigo que persigue SIEMPRE al jugador (sin rango de vision) y le hace dano al tocarlo.
@@ -43,6 +44,19 @@ public class Enemy : MonoBehaviour
             ? stats.GetMoveSpeed(type, playerStats != null ? playerStats.MoveSpeed : 0f,
                 waveStats.speedMultiplier, waveStats.fastMarginMultiplier)
             : 0f;
+
+    // Lista de los enemigos activos en la escena (la usan las armas para detectar objetivos).
+    public static readonly List<Enemy> Active = new List<Enemy>();
+
+    private void OnEnable()
+    {
+        Active.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        Active.Remove(this);
+    }
 
     private void Awake()
     {

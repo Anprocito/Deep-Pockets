@@ -75,7 +75,7 @@ public class UpgradeManager : MonoBehaviour
 
     private void OnLeveledUp(int newLevel)
     {
-        if (VictoryManager.GameWon) return; // la partida ya termino
+        if (VictoryManager.GameEnded) return; // la partida ya termino (victoria o derrota)
 
         // Si sube varios niveles de golpe, o sube mientras hay una ventana abierta, se hacen en cola.
         pendingLevelUps++;

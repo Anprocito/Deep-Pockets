@@ -22,15 +22,17 @@ public static class CardinalDirectionExtensions
 }
 
 // Armas del jugador. Se coloca en el jugador (junto a InventoryGrid).
-// La CASILLA donde esta un arma decide donde ataca:
-//   - la columna (direccion) decide hacia que punto cardinal queda su zona de ataque
-//   - la fila decide a que distancia del jugador queda (la fila de abajo es la mas cercana)
-// Un arma que ocupa varias casillas tiene una zona de ataque en cada una.
-// Cada arma ataca sola cuando detecta un enemigo dentro de alguna de sus zonas.
+// Cada casilla de la grilla es un sector de anillo alrededor del jugador:
+//   - la columna (direccion) decide hacia que punto cardinal apunta el sector (45 grados de ancho)
+//   - la fila decide a que distancia queda (la fila de abajo es la mas cercana)
+// Un arma que ocupa varias casillas cubre todos sus sectores juntos.
+// Cada arma ataca sola cuando hay un enemigo dentro de alguno de sus sectores.
 [RequireComponent(typeof(PlayerStats))]
 [RequireComponent(typeof(InventoryGrid))]
 public class WeaponInventory : MonoBehaviour
 {
+    private const float SectorAngle = 45f;
+
     [System.Serializable]
     public class StartingWeapon
     {
@@ -43,14 +45,13 @@ public class WeaponInventory : MonoBehaviour
     [Header("Armas iniciales")]
     [SerializeField] private List<StartingWeapon> startingWeapons = new List<StartingWeapon>();
 
-    [Header("Distancia de cada fila")]
-    [Tooltip("Distancias desde el jugador hasta el CENTRO de la zona de ataque, una por fila. " +
-             "El orden en que las escribas no importa: la fila de ABAJO de la grilla toma la mas CERCANA " +
-             "y la de ARRIBA la mas LEJANA.")]
-    [SerializeField] private float[] rowDistances = { 2f, 4f, 6f, 8f };
-
-    [Header("Deteccion")]
-    [SerializeField] private LayerMask enemyLayers = ~0;
+    [Header("Zonas de ataque (sectores alrededor del jugador)")]
+    [Tooltip("Radio del hueco libre alrededor del jugador. Ahi empieza la fila de abajo de la grilla.")]
+    [Min(0f)][SerializeField] private float innerRadius = 1.5f;
+    [Tooltip("Ancho de cada fila: cuanto se aleja del jugador cada fila.")]
+    [Min(0.1f)][SerializeField] private float rowWidth = 2f;
+    [Tooltip("Margen para contar a un enemigo que toca el borde de la zona (su radio aproximado).")]
+    [Min(0f)][SerializeField] private float enemyMargin = 0.4f;
 
     [Header("Zonas visibles en el juego")]
     [Tooltip("Dibuja en el piso la zona de ataque de cada arma. Se ve tambien en el juego final.")]
@@ -63,7 +64,6 @@ public class WeaponInventory : MonoBehaviour
     [SerializeField] private Color skillColor = new Color(0.75f, 0.35f, 1f, 1f);
     [Tooltip("Segundos que dura el destello.")]
     [Min(0.05f)][SerializeField] private float flashDuration = 0.25f;
-    [SerializeField] private float ringWidth = 0.08f;
     [Tooltip("Altura sobre el piso, para que la zona no se mezcle con el.")]
     [SerializeField] private float zoneHeightOffset = 0.03f;
 
@@ -72,10 +72,8 @@ public class WeaponInventory : MonoBehaviour
     [SerializeField] private bool logAttacks = true;
 
     private readonly List<EquippedWeapon> equipped = new List<EquippedWeapon>();
-    private readonly List<Vector3> zoneCenters = new List<Vector3>();
-    private readonly Collider[] buffer = new Collider[128];
+    private readonly List<ZoneSector> zones = new List<ZoneSector>();
 
-    private float[] sortedRowDistances;
     private Transform zonesRoot;
     private float lastGroundY;
 
@@ -119,12 +117,6 @@ public class WeaponInventory : MonoBehaviour
             Destroy(zonesRoot.gameObject);
     }
 
-    // Se llama al cambiar valores en el Inspector: obliga a recalcular las distancias ordenadas.
-    private void OnValidate()
-    {
-        sortedRowDistances = null;
-    }
-
     private void Update()
     {
         bool playerAlive = health == null || !health.IsDead;
@@ -133,9 +125,9 @@ public class WeaponInventory : MonoBehaviour
         {
             foreach (EquippedWeapon weapon in equipped)
             {
-                FillZoneCenters(weapon.Item);
+                FillZones(weapon.Item);
 
-                if (weapon.Tick(zoneCenters, stats, enemyLayers, buffer, logAttacks))
+                if (weapon.Tick(zones, enemyMargin, stats, logAttacks))
                     inventoryGrid.SetCounter(weapon.Item, weapon.CounterText);
             }
         }
@@ -177,40 +169,45 @@ public class WeaponInventory : MonoBehaviour
         inventoryGrid.SetCounter(item, weapon.CounterText);
     }
 
-    // Calcula el centro de la zona de ataque de cada casilla que ocupa el objeto
+    // Calcula el sector de cada casilla que ocupa el objeto
     // (en el mismo orden en que se crearon las zonas visibles).
-    private void FillZoneCenters(GridItem item)
+    private void FillZones(GridItem item)
     {
-        zoneCenters.Clear();
+        zones.Clear();
+        Vector3 origin = transform.position;
 
         for (int dr = 0; dr < item.Height; dr++)
         {
             for (int dc = 0; dc < item.Width; dc++)
-                zoneCenters.Add(GetZoneCenter((CardinalDirection)(item.Column + dc), item.Row + dr));
+                zones.Add(MakeZone(origin, item.Column + dc, item.Row + dr));
         }
     }
 
-    // Centro de la zona de ataque: el jugador + la direccion de la columna * la distancia de la fila.
-    private Vector3 GetZoneCenter(CardinalDirection direction, int row)
+    private ZoneSector MakeZone(Vector3 origin, int column, int row)
     {
-        return transform.position + direction.ToVector() * GetRowDistance(row);
-    }
+        // Las columnas van en sentido horario desde el Norte, de 45 en 45 grados.
+        float yaw = column * SectorAngle * Mathf.Deg2Rad;
+        GetRowBounds(row, out float inner, out float outer);
 
-    // Las distancias se ordenan de menor a mayor: la fila de ABAJO de la grilla toma la mas
-    // cercana al jugador y la de ARRIBA (fila 0) la mas lejana.
-    private float GetRowDistance(int row)
-    {
-        if (sortedRowDistances == null || sortedRowDistances.Length != rowDistances.Length)
+        return new ZoneSector
         {
-            sortedRowDistances = (float[])rowDistances.Clone();
-            System.Array.Sort(sortedRowDistances);
-        }
+            origin = origin,
+            direction = new Vector2(Mathf.Sin(yaw), Mathf.Cos(yaw)),
+            innerRadius = inner,
+            outerRadius = outer,
+            halfAngle = SectorAngle * 0.5f
+        };
+    }
 
-        if (sortedRowDistances.Length == 0) return 0f;
+    // Radios de una fila: la de ABAJO de la grilla es la mas cercana al jugador y la de ARRIBA (fila 0)
+    // la mas lejana. Las filas son bandas pegadas una a otra, asi que las zonas no dejan huecos.
+    private void GetRowBounds(int row, out float inner, out float outer)
+    {
+        int rowCount = inventoryGrid != null ? inventoryGrid.Rows : 4;
+        int fromBottom = Mathf.Clamp(rowCount - 1 - row, 0, Mathf.Max(0, rowCount - 1));
 
-        int rowCount = inventoryGrid != null ? inventoryGrid.Rows : sortedRowDistances.Length;
-        int index = Mathf.Clamp(rowCount - 1 - row, 0, sortedRowDistances.Length - 1);
-        return sortedRowDistances[index];
+        inner = innerRadius + fromBottom * rowWidth;
+        outer = inner + rowWidth;
     }
 
     // ----- Zonas de ataque visibles en el piso (tambien en el juego final) -----
@@ -224,7 +221,7 @@ public class WeaponInventory : MonoBehaviour
         zone.transform.SetParent(zonesRoot, false);
 
         WeaponZoneVisual visual = zone.AddComponent<WeaponZoneVisual>();
-        visual.Build(weapon.attackRadius, ringWidth);
+        visual.Build();
         return visual;
     }
 
@@ -236,7 +233,7 @@ public class WeaponInventory : MonoBehaviour
 
         foreach (EquippedWeapon weapon in equipped)
         {
-            FillZoneCenters(weapon.Item);
+            FillZones(weapon.Item);
 
             // 1 = recien disparado, 0 = destello terminado.
             float attackAmount = Mathf.Clamp01(1f - (Time.time - weapon.LastAttackTime) / flashDuration);
@@ -246,11 +243,13 @@ public class WeaponInventory : MonoBehaviour
             if (attackAmount > 0f) color = Color.Lerp(idleColor, attackColor, attackAmount);
             if (skillAmount > 0f) color = Color.Lerp(idleColor, skillColor, skillAmount); // la habilidad tiene prioridad
 
-            for (int i = 0; i < weapon.Visuals.Count && i < zoneCenters.Count; i++)
+            for (int i = 0; i < weapon.Visuals.Count && i < zones.Count; i++)
             {
-                Vector3 center = zoneCenters[i];
-                center.y = groundY;
-                weapon.Visuals[i].Apply(center, color);
+                ZoneSector zone = zones[i];
+                float yaw = Mathf.Atan2(zone.direction.x, zone.direction.y) * Mathf.Rad2Deg;
+                Vector3 position = new Vector3(zone.origin.x, groundY, zone.origin.z);
+
+                weapon.Visuals[i].Apply(position, yaw, zone.innerRadius, zone.outerRadius, color);
             }
         }
     }

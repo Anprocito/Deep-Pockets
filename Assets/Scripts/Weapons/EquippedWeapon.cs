@@ -1,6 +1,35 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// Zona de ataque de UNA casilla de la grilla: un sector de anillo alrededor del jugador
+// (45 grados de ancho, entre un radio interior y uno exterior). Solo cuenta el plano XZ.
+public struct ZoneSector
+{
+    public Vector3 origin;     // posicion del jugador
+    public Vector2 direction;  // direccion central del sector en XZ (normalizada)
+    public float innerRadius;
+    public float outerRadius;
+    public float halfAngle;    // la mitad del ancho del sector, en grados
+
+    // "tolerance" es el margen para contar a un enemigo que toca el borde (su radio aproximado).
+    public bool Contains(Vector3 point, float tolerance)
+    {
+        Vector2 offset = new Vector2(point.x - origin.x, point.z - origin.z);
+        float distance = offset.magnitude;
+
+        if (distance > outerRadius + tolerance) return false;
+        if (distance < innerRadius - tolerance) return false;
+        if (distance < 0.0001f) return true;
+
+        // Angulo entre la direccion hacia el enemigo y el centro del sector.
+        // La tolerancia lateral es mayor cuanto mas cerca del jugador esta el enemigo.
+        float angle = Vector2.Angle(direction, offset);
+        float angularTolerance = Mathf.Atan2(tolerance, distance) * Mathf.Rad2Deg;
+
+        return angle <= halfAngle + angularTolerance;
+    }
+}
+
 // Estado en tiempo de ejecucion de un arma colocada en la grilla (tiempo de espera, contador de
 // ataques o temporizador, y habilidad cargada). Su posicion la da el GridItem.
 // Es una clase normal de C#, no un componente: la actualiza WeaponInventory.
@@ -44,9 +73,9 @@ public class EquippedWeapon
         nextSkillTime = Time.time + data.skillCooldown;
     }
 
-    // Se llama en cada frame con el centro de la zona de cada casilla que ocupa el arma.
+    // Se llama en cada frame con la zona de cada casilla que ocupa el arma.
     // Devuelve true si cambio el texto del contador (para refrescar la UI).
-    public bool Tick(List<Vector3> zoneCenters, PlayerStats stats, LayerMask layers, Collider[] buffer, bool log)
+    public bool Tick(List<ZoneSector> zones, float tolerance, PlayerStats stats, bool log)
     {
         bool counterChanged = false;
         bool byTime = Data.skillTrigger == SkillTrigger.Time;
@@ -60,7 +89,7 @@ public class EquippedWeapon
         {
             float damage = stats != null ? stats.GetFinalDamage(Data.baseDamage) : Data.baseDamage;
 
-            if (Strike(zoneCenters, damage, Data.maxTargets, false, layers, buffer, log))
+            if (Strike(zones, tolerance, damage, Data.maxTargets, false, log))
             {
                 nextAttackTime = now + Data.attackInterval;
                 LastAttackTime = now;
@@ -84,7 +113,7 @@ public class EquippedWeapon
             //    haya enemigos en las zonas o no. Golpea a los que esten dentro en ese momento.
             if (now >= nextSkillTime)
             {
-                bool hit = Strike(zoneCenters, skillDamage, Data.skillMaxTargets, true, layers, buffer, log);
+                bool hit = Strike(zones, tolerance, skillDamage, Data.skillMaxTargets, true, log);
 
                 if (!hit && log)
                     Debug.Log($"{Data.weaponName} HABILIDAD: sin enemigos en la zona");
@@ -106,7 +135,7 @@ public class EquippedWeapon
         {
             // 3) Habilidad por ataques: ataque aparte del normal, en las mismas zonas.
             //    Si al cargarse no hay enemigos, espera cargada hasta que aparezca uno.
-            if (Strike(zoneCenters, skillDamage, Data.skillMaxTargets, true, layers, buffer, log))
+            if (Strike(zones, tolerance, skillDamage, Data.skillMaxTargets, true, log))
             {
                 skillCharged = false;
                 attacksSinceSkill = 0;
@@ -123,33 +152,37 @@ public class EquippedWeapon
         return Mathf.CeilToInt(Mathf.Max(0f, nextSkillTime - now));
     }
 
-    // Golpea a los enemigos mas cercanos que esten dentro de alguna de las zonas.
+    // Golpea a los enemigos mas cercanos al jugador que esten dentro de alguna de las zonas.
     // Devuelve false si no habia ninguno.
-    private bool Strike(List<Vector3> zoneCenters, float damage, int maxTargets, bool isSkill,
-                        LayerMask layers, Collider[] buffer, bool log)
+    private bool Strike(List<ZoneSector> zones, float tolerance, float damage, int maxTargets,
+                        bool isSkill, bool log)
     {
         candidates.Clear();
 
-        for (int z = 0; z < zoneCenters.Count; z++)
+        List<Enemy> active = Enemy.Active;
+        for (int i = 0; i < active.Count; i++)
         {
-            // QueryTriggerInteraction.Collide para detectar tambien enemigos con el collider en modo Trigger.
-            int count = Physics.OverlapSphereNonAlloc(zoneCenters[z], Data.attackRadius, buffer, layers,
-                QueryTriggerInteraction.Collide);
+            Enemy enemy = active[i];
 
-            for (int i = 0; i < count; i++)
+            // Se ignoran los que ya murieron en este mismo frame (Destroy se aplica al final del frame).
+            if (enemy.CurrentHealth <= 0f) continue;
+
+            Vector3 position = enemy.transform.position;
+            for (int z = 0; z < zones.Count; z++)
             {
-                Enemy enemy = buffer[i].GetComponentInParent<Enemy>();
-
-                // Se ignoran los que ya murieron en este mismo frame (Destroy se aplica al final del frame).
-                if (enemy != null && enemy.CurrentHealth > 0f && !candidates.Contains(enemy))
+                if (zones[z].Contains(position, tolerance))
+                {
                     candidates.Add(enemy);
+                    break;
+                }
             }
         }
 
         if (candidates.Count == 0) return false;
 
+        Vector3 origin = zones[0].origin;
         candidates.Sort((a, b) =>
-            NearestZoneSqrDistance(a, zoneCenters).CompareTo(NearestZoneSqrDistance(b, zoneCenters)));
+            (a.transform.position - origin).sqrMagnitude.CompareTo((b.transform.position - origin).sqrMagnitude));
 
         int hits = maxTargets <= 0 ? candidates.Count : Mathf.Min(maxTargets, candidates.Count);
         for (int i = 0; i < hits; i++)
@@ -162,18 +195,5 @@ public class EquippedWeapon
         }
 
         return true;
-    }
-
-    private static float NearestZoneSqrDistance(Enemy enemy, List<Vector3> zoneCenters)
-    {
-        float best = float.MaxValue;
-
-        for (int i = 0; i < zoneCenters.Count; i++)
-        {
-            float distance = (enemy.transform.position - zoneCenters[i]).sqrMagnitude;
-            if (distance < best) best = distance;
-        }
-
-        return best;
     }
 }

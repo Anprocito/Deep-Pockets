@@ -1,7 +1,8 @@
 using UnityEngine;
 
 // Orbe de experiencia que sueltan los enemigos al morir.
-// El jugador lo recoge al tocarlo. Se coloca en el prefab del orbe (una esfera con collider).
+// Si el jugador pasa cerca, el orbe empieza a seguirlo; el jugador lo recoge al tocarlo.
+// Se coloca en el prefab del orbe (una esfera con collider).
 [RequireComponent(typeof(Collider))]
 public class ExperienceOrb : MonoBehaviour
 {
@@ -9,10 +10,23 @@ public class ExperienceOrb : MonoBehaviour
     [Min(1)]
     [SerializeField] private int experience = 10;
 
+    [Header("Atraccion hacia el jugador")]
+    [Tooltip("Distancia a la que el orbe detecta al jugador y empieza a seguirlo. 0 = nunca lo sigue.")]
+    [Min(0f)]
+    [SerializeField] private float detectionRange = 4f;
+    [Tooltip("Velocidad con la que empieza a seguir al jugador.")]
+    [Min(0f)]
+    [SerializeField] private float followSpeed = 6f;
+    [Tooltip("Cuanto aumenta su velocidad por segundo mientras lo sigue, para alcanzarlo aunque corra.")]
+    [Min(0f)]
+    [SerializeField] private float acceleration = 25f;
+
     private PlayerExperience player;
     private Collider playerCollider;
     private Collider ownCollider;
     private bool collected;
+    private bool following;
+    private float currentSpeed;
     private float experienceMultiplier = 1f;
 
     private void Awake()
@@ -53,6 +67,8 @@ public class ExperienceOrb : MonoBehaviour
     {
         if (collected || playerCollider == null) return;
 
+        FollowPlayer();
+
         // Contacto por codigo (igual que el dano de los enemigos): funciona aunque el jugador
         // se mueva por Transform y aunque ninguno tenga Rigidbody.
         bool touching = Physics.ComputePenetration(
@@ -65,5 +81,31 @@ public class ExperienceOrb : MonoBehaviour
         collected = true;
         player.AddExperience(experience * experienceMultiplier);
         Destroy(gameObject);
+    }
+
+    // Cuando el jugador entra en el rango, el orbe empieza a seguirlo y ya no lo suelta.
+    // Va acelerando, asi termina alcanzandolo aunque el jugador se aleje corriendo.
+    private void FollowPlayer()
+    {
+        Vector3 target = playerCollider.bounds.center;
+
+        if (!following)
+        {
+            if (detectionRange <= 0f) return;
+            if ((target - transform.position).sqrMagnitude > detectionRange * detectionRange) return;
+
+            following = true;
+            currentSpeed = followSpeed;
+        }
+
+        currentSpeed += acceleration * Time.deltaTime;
+        transform.position = Vector3.MoveTowards(transform.position, target, currentSpeed * Time.deltaTime);
+    }
+
+    // Dibuja el rango de deteccion en la ventana Scene al seleccionar el orbe.
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, detectionRange);
     }
 }
