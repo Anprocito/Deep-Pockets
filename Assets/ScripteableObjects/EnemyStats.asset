@@ -16,7 +16,7 @@ MonoBehaviour:
   normalMoveSpeed: 6
   normalDamage: 10
   attackInterval: 1
-  fastSpeedBelowPlayer: 0.4
+  fastSpeedBelowPlayer: 0.8
   fastHealthMultiplier: 0.5
   fastDamageMultiplier: 0.5
   tankHealthMultiplier: 3
