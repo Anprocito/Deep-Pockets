@@ -43,6 +43,7 @@ public class VictoryManager : MonoBehaviour
     private RectTransform root; // donde se construye la interfaz
     private Font font;
     private Text counterText;
+    private Button restartButton;
     private int kills;
     private float elapsed; // tiempo de juego: no cuenta mientras el juego esta en pausa
 
@@ -247,6 +248,7 @@ public class VictoryManager : MonoBehaviour
 
         Button button = buttonRect.gameObject.AddComponent<Button>();
         button.targetGraphic = background;
+        restartButton = button;
 
         ColorBlock colors = button.colors;
         colors.normalColor = new Color(0.85f, 0.85f, 0.85f, 1f);
@@ -261,20 +263,21 @@ public class VictoryManager : MonoBehaviour
             restartLabel, 40, FontStyle.Bold, TextAnchor.MiddleCenter);
     }
 
-    // Vuelve a cargar la escena actual desde cero.
+    // Reinicia el nivel (tanto desde la victoria como desde la derrota).
     private void RestartLevel()
     {
-        int sceneIndex = SceneManager.GetActiveScene().buildIndex;
+        // Evita un segundo clic mientras la escena se descarga.
+        if (restartButton != null)
+            restartButton.interactable = false;
 
-        if (sceneIndex < 0)
+        if (!LevelRestarter.Restart())
         {
             Debug.LogError("VictoryManager: la escena actual no esta en Build Profiles / Build Settings, " +
                            "asi que no se puede reiniciar. Agregala con \"Add Open Scenes\".", this);
-            return;
-        }
 
-        Time.timeScale = 1f; // al terminar la partida el juego quedo en pausa
-        SceneManager.LoadScene(sceneIndex);
+            if (restartButton != null)
+                restartButton.interactable = true;
+        }
     }
 
     private RectTransform CreateRect(string name, Vector2 anchor, Vector2 pivot, Vector2 position, Vector2 size)
@@ -311,5 +314,45 @@ public class VictoryManager : MonoBehaviour
         rect.gameObject.AddComponent<Shadow>();
 
         return text;
+    }
+}
+
+// Reinicia el nivel de forma segura, sin importar cuantas veces se haga.
+// Recargar la escena directamente deja la escena vieja y la nueva vivas a la vez durante un instante:
+// los scripts pueden confundir objetos viejos con nuevos. Aqui primero se descarta por completo la escena
+// actual (pasando por una escena vacia temporal) y solo despues se carga el nivel de nuevo, asi que
+// cuando el nivel arranca no queda ningun objeto de la partida anterior.
+public static class LevelRestarter
+{
+    // Devuelve false si la escena actual no esta en Build Profiles / Build Settings.
+    public static bool Restart()
+    {
+        Scene current = SceneManager.GetActiveScene();
+        int sceneIndex = current.buildIndex;
+
+        if (sceneIndex < 0) return false;
+
+        Time.timeScale = 1f; // al terminar la partida el juego quedo en pausa
+
+        // Una escena vacia pasa a ser la activa: asi se puede descargar la escena del juego.
+        Scene temporary = SceneManager.CreateScene("RestartTemporary");
+        SceneManager.SetActiveScene(temporary);
+
+        AsyncOperation unload = SceneManager.UnloadSceneAsync(current);
+
+        if (unload == null)
+        {
+            SceneManager.LoadScene(sceneIndex);
+            return true;
+        }
+
+        // Cuando la escena vieja ya no existe, se carga el nivel limpio (reemplaza a la vacia).
+        unload.completed += _ =>
+        {
+            Enemy.Active.Clear();
+            SceneManager.LoadScene(sceneIndex);
+        };
+
+        return true;
     }
 }
