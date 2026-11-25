@@ -406,7 +406,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a8766bd087202c5478b8218b66cd2840, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VictoryManager
-  enemiesToWin: 1
+  enemiesToWin: 450
   victoryTitle: Ganaste!
   defeatTitle: Perdiste!
   restartLabel: Reiniciar
